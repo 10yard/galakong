@@ -44,10 +44,14 @@ function dkshooter.startplugin()
 	local missile_x = nil	
 	local bonus = 0
 	local hit_count = 0
-	local last_hit = 0
-	local last_hit_fireball = 00
+	local last_bonus = 0
+	local last_hit_cleanup = 00
 	
-	local enemy_data = {0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550}
+	local enemy_data = 
+		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
+		 0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
+		 0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550,
+		 0x65a0, 0x65b0, 0x65c0, 0x65d0, 0x65e0, 0x65f0}
 	
 	local char_table = {}
 	char_table["0"] = 0x00
@@ -97,7 +101,7 @@ function dkshooter.startplugin()
 		if cpu ~= nil then
 			mode1 = mem:read_i8(0x6005)  -- 1-attract mode, 2-credits entered waiting to start, 3-when playing game
 			mode2 = mem:read_i8(0x600a)  -- Status of note: 7-climb scene, 10-how high, 15-dead, 16-game over
-			stage = mem:read_i8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets, 5-extra/bonus
+			stage = mem:read_i8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets
 			
 			draw_stars()
 			-- During gameplay
@@ -150,7 +154,7 @@ function dkshooter.startplugin()
 							mem:write_u8(0x6082, 3)
 						end
 					end
-					
+										
 					-- animate the missile
 					if missile_y ~= nil then
 						-- check for enemy hit
@@ -159,20 +163,20 @@ function dkshooter.startplugin()
 							local b_status, enemy_x, enemy_y = mem:read_u8(address), mem:read_u8(address + 3) - 15, 256 - mem:read_u8(address + 5)
 							if b_status ~= 0 and enemy_y < 256 then
 								if missile_y > enemy_y - 7 and missile_y < enemy_y + 7 and missile_x > enemy_x - 7 and missile_x < enemy_x + 7 then
-									hit_count = hit_count + 1
+									hit_count = hit_count + 1	
 									
-									if address < 0x6500 then
-										-- destroy the fireball
-										mem:write_u8(address + 6, 1)   -- flag an unused address for cleanup								
+									if (address >= 0x6400 and address <= 0x6500) or (address >= 0x65a0 and address <= 0x6600) then
+										-- destroy a fireball, firefox or pie
+										mem:write_u8(address + 6, 1)   -- flag an unused address for later cleanup								
 										mem:write_u8(address+7, 0x53)  -- switch to blank sprites										
-										last_hit_fireball = os.clock()
+										last_hit_cleanup = os.clock()
 										missile_y = missile_y + 10     -- move missile further to prevent double-hit
-									elseif address < 0x6600 then
-										-- destory, err,  move the spring off screen
+									elseif address >= 0x6500 and address <= 0x65a0 then
+										-- destory a spring, err, move the spring off screen
 										mem:write_u8(address + 3, 2)
 										mem:write_u8(address + 5, 80)										
 									else
-										-- destroy the barrel
+										-- destroy a barrel
 										mem:write_u8(address + 3, 0)
 										mem:write_u8(address + 5, 0)
 									end
@@ -201,7 +205,7 @@ function dkshooter.startplugin()
 										mem:write_u8(0x6a31, sprite)
 										mem:write_u8(0x6a32, 0x07)
 										mem:write_u8(0x6a33, 256 - missile_y)
-										last_hit = os.clock()
+										last_bonus = os.clock()
 									
 										--update score in ram
 										score = string_format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
@@ -225,7 +229,7 @@ function dkshooter.startplugin()
 				end
 				
 				-- Clean up any destroyed fireballs
-				if os.clock() - last_hit_fireball > 0.25 then
+				if os.clock() - last_hit_cleanup > 0.25 then
 					for _, address in pairs(enemy_data) do
 						if mem:read_u8(address + 6) == 1 then
 							mem:write_u8(address, 0)
@@ -236,7 +240,7 @@ function dkshooter.startplugin()
 				end
 								
 				-- clear awarded point sprites
-				if os.clock() - last_hit > 1 then
+				if os.clock() - last_bonus > 1 then
 					mem:write_u8(0x6a30, 0x0)
 				end
 				
