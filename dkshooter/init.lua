@@ -3,7 +3,7 @@
 -- Tested with latest MAME versions 0.235 and 0.196
 -- Compatible with MAME versions from 0.196
 --
--- Jumpman is assisted by an accompanying shooter,  taking out barrels, fireballs, firefoxes and springs.
+-- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.
 --
 -- The default mode is single player,  with your ship following Jumpman's position.
 -- Jumpman can control the ship independently when he is on a ladder.  The jump button also shoots.
@@ -104,6 +104,7 @@ function dkshooter.startplugin()
 			stage = mem:read_i8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets
 			
 			draw_stars()
+			
 			-- During gameplay
 			---------------------------------------------------------------------------------
 			if mode2 == 0xc or mode2 == 0xb or mode2 == 0xd then
@@ -125,7 +126,7 @@ function dkshooter.startplugin()
 						ship_y = ship_y - 0.5
 					end
 				end
-				
+								
 				-- move ship
 				if PLAY_MODE == 1 and mem:read_u8(0x6215) ~= 1 then
 					-- The ship follows Jumpman X position unless on a ladder
@@ -165,13 +166,13 @@ function dkshooter.startplugin()
 								if missile_y > enemy_y - 7 and missile_y < enemy_y + 7 and missile_x > enemy_x - 7 and missile_x < enemy_x + 7 then
 									hit_count = hit_count + 1	
 									
-									if (address >= 0x6400 and address <= 0x6500) or (address >= 0x65a0 and address <= 0x6600) then
+									if (address >= 0x6400 and address < 0x6500) or (address >= 0x65a0 and address < 0x6600) then
 										-- destroy a fireball, firefox or pie
 										mem:write_u8(address + 6, 1)   -- flag an unused address for later cleanup								
 										mem:write_u8(address+7, 0x53)  -- switch to blank sprites										
 										last_hit_cleanup = os.clock()
 										missile_y = missile_y + 10     -- move missile further to prevent double-hit
-									elseif address >= 0x6500 and address <= 0x65a0 then
+									elseif address >= 0x6500 and address < 0x65a0 then
 										-- destory a spring, err, move the spring off screen
 										mem:write_u8(address + 3, 2)
 										mem:write_u8(address + 5, 80)										
