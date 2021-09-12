@@ -1,7 +1,7 @@
 echo ----------------------------------------------------------------------------------------------
 echo  Package the dkshooter plugin 
 echo ----------------------------------------------------------------------------------------------
-copy readme.md dkshooter \ /Y
+copy readme.md dkshooter\ /Y
 
 echo **** package into a release ZIP getting the version from version.txt
 set /p version=<VERSION

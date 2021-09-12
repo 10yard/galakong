@@ -241,8 +241,9 @@ function dkshooter.startplugin()
 				end
 								
 				-- clear awarded point sprites
-				if os.clock() - last_bonus > 1 then
+				if last_bonus ~= 0 and os.clock() - last_bonus > 1 then
 					mem:write_u8(0x6a30, 0x0)
+					last_bonus = 0
 				end
 				
 				draw_ship(ship_y, ship_x)

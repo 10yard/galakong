@@ -1,4 +1,4 @@
-# **A Donkey Kong Shoot Em Up Plugin** #
+# **A Donkey Kong Shoot 'Em Up Plugin** #
 
 Tested with latest MAME version 0.235
 (Compatible with MAME and WolfMAME versions from 0.196 upwards)
