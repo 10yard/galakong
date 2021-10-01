@@ -1,12 +1,14 @@
 -- DK SHOOTER by Jon Wilson (10yard)
 --
--- Tested with latest MAME versions 0.235 and 0.196
+-- Tested with latest MAME version 0.235
 -- Compatible with MAME versions from 0.196
 --
--- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.
+-- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
+-- Bonus points are awarded for destroying multiple targets.
 --
 -- The default mode is single player,  with your ship following Jumpman's position.
--- Jumpman can control the ship independently when he is on a ladder.  The jump button also shoots.
+-- The jump button also shoots.
+-- Jumpman can control the ship independently when he is on a ladder (and breifly when he is smashing an item with the hammer).
 
 -- There is also a 2 player co-op mode where a 2nd player controls the ship using separate controls.
 -- 		P1 Start = Left
@@ -40,8 +42,8 @@ function dkshooter.startplugin()
 	
 	local ship_y = -8
 	local ship_x = 48
-	local missile_y = nil
-	local missile_x = nil	
+	local missile_y
+	local missile_x	
 	local bonus = 0
 	local hit_count = 0
 	local last_bonus = 0
@@ -128,7 +130,7 @@ function dkshooter.startplugin()
 				end
 								
 				-- move ship
-				if PLAY_MODE == 1 and mem:read_u8(0x6215) ~= 1 then
+				if PLAY_MODE == 1 and mem:read_u8(0x6215) ~= 1 and mem:read_u8(0x6350) ~= 1 then
 					-- The ship follows Jumpman X position unless on a ladder
 					if ship_x < jumpman_x then
 						ship_x = ship_x + 1
