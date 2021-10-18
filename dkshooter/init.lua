@@ -21,7 +21,7 @@
 
 local exports = {}
 exports.name = "dkshooter"
-exports.version = "0.1"
+exports.version = "0.2"
 exports.description = "Donkey Kong Shooter"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -32,28 +32,26 @@ function dkshooter.startplugin()
 	-- 1 = Single player mode,  mirrors Jumpman's movements
 	-- 2 - Co-op mode,  Ship is controlled with P1 Start, P2 Start and Coin.
 	local PLAY_MODE = 1
-
-	local math_floor = math.floor
-	local math_fmod = math.fmod
-	local math_random = math.random
-	local string_sub = string.sub
-	local string_len = string.len
-	local string_format = string.format
 	
-	local ship_y = -8
-	local ship_x = 48
+	local ship_y = -10
+	local ship_x = 49
 	local missile_y
 	local missile_x	
 	local bonus = 0
 	local hit_count = 0
 	local last_bonus = 0
-	local last_hit_cleanup = 00
+	local last_hit_cleanup = 0
+	local last_starfield = 0
 	
 	local enemy_data = 
 		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
 		 0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 		 0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550,
 		 0x65a0, 0x65b0, 0x65c0, 0x65d0, 0x65e0, 0x65f0}
+
+	WHITE = 0xffdedede
+	RED = 0xffff0000
+	BLUE = 0xff0068de	
 	
 	local char_table = {}
 	char_table["0"] = 0x00
@@ -68,8 +66,6 @@ function dkshooter.startplugin()
 	char_table["9"] = 0x09
 	char_table[" "] = 0x10
 
-	-- Colours
-	GREEN = 0xff00fc00
 	
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -89,46 +85,49 @@ function dkshooter.startplugin()
 			change_text()
 
 			--Generate a starfield
-			number_of_stars = 400
+			number_of_stars = 300
 			starfield={}
 			math.randomseed(os.time())
 			for _=1, number_of_stars do
-				table.insert(starfield, math_random(255))
-				table.insert(starfield, math_random(223))
+				table.insert(starfield, math.random(255))
+				table.insert(starfield, math.random(223))
+				table.insert(starfield, 0xff * (math.random(64) + 192) * (math.random(64) + 192) * (math.random(64) + 192))
 			end
 		end
 	end
 
 	function main()
 		if cpu ~= nil then
-			mode1 = mem:read_u8(0x6005)  -- 1-attract mode, 2-credits entered waiting to start, 3-when playing game
-			mode2 = mem:read_u8(0x600a)  -- Status of note: 7-climb scene, 10-how high, 15-dead, 16-game over
-			stage = mem:read_u8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets
+			local mode1 = mem:read_u8(0x6005)  -- 1-attract mode, 2-credits entered waiting to start, 3-when playing game
+			local mode2 = mem:read_u8(0x600a)  -- Status of note: 7-climb scene, 10-how high, 15-dead, 16-game over
+			local stage = mem:read_u8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets
 			
-			draw_stars()
-			
+			draw_stars()			
+						
 			-- During gameplay
 			---------------------------------------------------------------------------------
 			if mode2 == 0xc or mode2 == 0xb or mode2 == 0xd then
 				local jumpman_x = mem:read_u8(0x6203) - 15
+				local jumpman_y = mem:read_u8(0x6205)
 				local left, right, fire = get_inputs()		
 				if mode2 == 0xb then
-					-- reset ship and missiles
-					ship_x = 48
+					-- reset ship, missiles and bonus
+					ship_x = 49
 					missile_y = nil
-					-- animate ship upwards
-					if ship_y < 7 then
-						ship_y = ship_y + 0.5
-					end
-					-- reset bonus at start of level
 					bonus = 0
+				elseif mode2 == 0xc then
+					-- adjust ship y with jumpman when at screen bottom
+					ship_y = 230 - jumpman_y
+					if ship_y > 0 then
+						ship_y = 0
+					end
 				elseif mode2 == 0xd then
 					-- animate ship downwards
-					if ship_y > -8 then
+					if ship_y >= -8 then
 						ship_y = ship_y - 0.5
 					end
 				end
-								
+												
 				-- move ship
 				if PLAY_MODE == 1 and mem:read_u8(0x6215) ~= 1 and mem:read_u8(0x6350) ~= 1 then
 					-- The ship follows Jumpman X position unless on a ladder
@@ -161,7 +160,6 @@ function dkshooter.startplugin()
 					-- animate the missile
 					if missile_y ~= nil then
 						-- check for enemy hit
-						----------------------------------------------------------------
 						for _, address in pairs(enemy_data) do
 							local b_status, enemy_x, enemy_y = mem:read_u8(address), mem:read_u8(address + 3) - 15, 256 - mem:read_u8(address + 5)
 							if b_status ~= 0 and enemy_y < 256 then
@@ -211,10 +209,10 @@ function dkshooter.startplugin()
 										last_bonus = os.clock()
 									
 										--update score in ram
-										score = string_format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
-										set_score_segment(0x60b4, string_sub(score, 1,2))
-										set_score_segment(0x60b3, string_sub(score, 3,4))
-										set_score_segment(0x60b2, string_sub(score, 5,6))
+										score = string.format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
+										set_score_segment(0x60b4, string.sub(score, 1,2))
+										set_score_segment(0x60b3, string.sub(score, 3,4))
+										set_score_segment(0x60b2, string.sub(score, 5,6))
 										-- update score on screen
 										write_message(0xc7781, score) 
 									end
@@ -223,7 +221,7 @@ function dkshooter.startplugin()
 						end		
 										
 						draw_missile(missile_y, missile_x)
-						missile_y = missile_y + 4
+						missile_y = missile_y + 5
 						if missile_y >= 240 then
 							missile_y = nil
 							bonus = 0
@@ -293,31 +291,72 @@ function dkshooter.startplugin()
 	end
 
 	function draw_missile(y, x)
-		version_draw_box(y, x, y+3, x+1, 0xff00fc00, 0xff00fc00)
+		version_draw_box(y+4, x-1, y+6, x+2, 0xff0000ff, 0xff0000ff)
+		version_draw_box(y, x, y+4, x+1, 0xffff0000, 0xffff0000)
+		version_draw_box(y+4, x, y+5, x+1, 0xffffffff, 0xffffffff)
+		version_draw_box(y+5, x, y+8, x+1, 0xff0000ff, 0xff0000ff)
 	end
 
 	function draw_ship(y, x)
-		-- y,x relates to gun of ship.
+		-- y, x relates to gun of ship.
 		-- _y, _x relates to bottom left corner
-		_y = y - 7
-		_x = x - 6
-		version_draw_box(_y, _x, _y+4, _x+13, 0xff00fc00, 0xff00fc00)
-		version_draw_box(_y+4, _x+1, _y+5, _x+12, 0xff00fc00, 0xff00fc00)
-		version_draw_box(_y+5, _x+5, _y+7, _x+8, 0xff00fc00, 0xff00fc00)
-		version_draw_box(_y+7, _x+6, _y+8, _x+7, 0xff00fc00, 0xff00fc00)
+		local _y = y
+		local _x = x - 7
+		version_draw_box(_y+2, _x+6, _y+13, _x+9, WHITE, WHITE)
+		version_draw_box(_y, _x+7, _y+16, _x+8, WHITE, WHITE)
+		version_draw_box(_y+3, _x+3, _y+8, _x+12, WHITE, WHITE)
+		version_draw_box(_y+8, _x+5, _y+9, _x+10, WHITE, WHITE)
+		version_draw_box(_y+2, _x+7, _y+3, _x+9, WHITE, WHITE)		
+		version_draw_box(_y, _x, _y+8, _x+1, WHITE, WHITE)
+		version_draw_box(_y, _x+14, _y+8, _x+15, WHITE, WHITE)
+		version_draw_box(_y+1, _x+1, _y+4, _x+2, WHITE, WHITE)
+		version_draw_box(_y+2, _x+2, _y+5, _x+3, WHITE, WHITE)
+		version_draw_box(_y+1, _x+13, _y+4, _x+14, WHITE, WHITE)
+		version_draw_box(_y+2, _x+12, _y+5, _x+13, WHITE, WHITE)
+		version_draw_box(_y+6, _x, _y+8, _x+1, RED, RED)
+		version_draw_box(_y+6, _x+14, _y+8, _x+15, RED, RED)
+		version_draw_box(_y+6, _x+14, _y+8, _x+15, RED, RED)
+		version_draw_box(_y+8, _x+3, _y+10, _x+4, RED, RED)
+		version_draw_box(_y+8, _x+11, _y+10, _x+12, RED, RED)
+		version_draw_box(_y+1, _x+4, _y+3, _x+6, RED, RED)
+		version_draw_box(_y+1, _x+9, _y+3, _x+11, RED, RED)
+		version_draw_box(_y+3, _x+5, _y+4, _x+6, RED, RED)
+		version_draw_box(_y+3, _x+9, _y+4, _x+10, RED, RED)
+		version_draw_box(_y+5, _x+6, _y+7, _x+7, RED, RED)
+		version_draw_box(_y+6, _x+7, _y+8, _x+8, RED, RED)
+		version_draw_box(_y+5, _x+8, _y+7, _x+9, RED, RED)
+		version_draw_box(_y+6, _x+3, _y+7, _x+4, BLUE, BLUE)
+		version_draw_box(_y+7, _x+4, _y+8, _x+5, BLUE, BLUE)
+		version_draw_box(_y+6, _x+11, _y+7, _x+12, BLUE, BLUE)
+		version_draw_box(_y+7, _x+10, _y+8, _x+11, BLUE, BLUE)
 	end
 
 	function draw_stars()
 		-- draw the starfield background
 		local _starfield = starfield
 	  	local _ypos, _xpos = 0, 0
-		for key=1, number_of_stars, 2 do
-			_ypos, _xpos = _starfield[key], _starfield[key+1]
-			scr:draw_line(_ypos, _xpos, _ypos, _xpos, 0xbbffffff)
-			
+		
+		for key=1, number_of_stars, 3 do
+			_ypos, _xpos, _col = _starfield[key], _starfield[key+1], _starfield[key+2]
+			version_draw_box(_ypos, _xpos, _ypos+1, _xpos+1, _col, _col)
+
+			--do we regenerate the starfield colours
+			if os.clock() - last_starfield > 0.25 then
+				_starfield[key+2] = 0xff * (math.random(64) + 192) * (math.random(64) + 192) * (math.random(64) + 192)
+			end
+
+						
 			--slowly scroll the starfield
-			_starfield[key], _starfield[key+1] = math_fmod(_ypos + 0.01, 256), math_fmod(_xpos + 0.05,224)
+			_starfield[key] = _starfield[key] - 0.5
+			if _starfield[key] < 0 then
+				_starfield[key] = 256
+			end
 		end
+
+		if os.clock() - last_starfield > 0.25 then
+			last_starfield = os.clock()
+		end
+
 	end
 	
 	function int_to_bin(x)
@@ -340,7 +379,7 @@ function dkshooter.startplugin()
 	end	
 	
 	function get_score_segment(address)
-		return string_format("%02d", string_format("%x", mem:read_u8(address)))
+		return string.format("%02d", string.format("%x", mem:read_u8(address)))
 	end
 
 	function set_score_segment(address, segment)
