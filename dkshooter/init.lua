@@ -1,4 +1,5 @@
--- DK SHOOTER by Jon Wilson (10yard)
+-- DK SHOOTER with Galaga theme
+-- by Jon Wilson (10yard)
 --
 -- Tested with latest MAME version 0.235
 -- Compatible with MAME versions from 0.196
@@ -8,7 +9,7 @@
 --
 -- The default mode is single player,  with your ship following Jumpman's position.
 -- The jump button also shoots.
--- Jumpman can control the ship independently when he is on a ladder (and breifly when he is smashing an item with the hammer).
+-- Jumpman can control the ship independently when he is on a ladder .
 
 -- There is also a 2 player co-op mode where a 2nd player controls the ship using separate controls.
 -- 		P1 Start = Left
@@ -33,7 +34,7 @@ function dkshooter.startplugin()
 	-- 1) Single player mode:  mirrors Jumpman's movements
 	-- 2) Co-op mode:  the ship is controlled by player 2 using "P1 Start", "P2 Start" and "Coin".
 	local play_mode = 1
-	local sounder_path = "plugins/dkchorus/bin/sounder.exe"
+	local sounder_path = "plugins/dkshooter/bin/sounder.exe"
 	
 	local ship_y = -10
 	local ship_x = 230
@@ -129,8 +130,7 @@ function dkshooter.startplugin()
 			for _=1, number_of_stars do
 				table.insert(starfield, math.random(255))
 				table.insert(starfield, math.random(223))
-				-- generate a random bright colour
-				table.insert(starfield, 0xff * (math.random(64) + 192) * (math.random(64) + 192) * (math.random(64) + 192))
+				table.insert(starfield, 0xff000000)
 			end
 		end
 	end
@@ -156,6 +156,7 @@ function dkshooter.startplugin()
 			if mode2 == 0x07 and mem:read_u8(0xc638e) > 10 then
 				clear_sounds()
 				if not custom_sound then
+					stop()
 					play("start")
 					custom_sound = true
 				end
@@ -252,11 +253,10 @@ function dkshooter.startplugin()
 											mem:write_u8(address + 3, 0)
 											mem:write_u8(address + 5, 0)
 										end
-										
 										-- play bonus sound
 										mem:write_u8(0x6085, 0)
 										mem:write_u8(0x6085, 1)
-										
+																				
 										-- calculate bonus for destroying multiple enemies.
 										if hit_count == 1 then
 											bonus = 300
@@ -423,7 +423,7 @@ function dkshooter.startplugin()
 	function draw_stars()
 		-- draw the starfield background
 		local _starfield = starfield
-	  	local _ypos, _xpos = 0, 0
+	  	local _ypos, _xpos, _col = 0, 0, 0xff000000
 		
 		for key=1, number_of_stars, 3 do
 			_ypos, _xpos, _col = _starfield[key], _starfield[key+1], _starfield[key+2]
@@ -432,7 +432,14 @@ function dkshooter.startplugin()
 
 			--do we regenerate the starfield colours
 			if os.clock() - last_starfield > 0.15 then
-				_starfield[key+2] = 0xff * (math.random(64) + 192) * (math.random(64) + 192) * (math.random(64) + 192)
+
+				_col = 0xff000000
+				if math.random(4) >= 2 then
+					-- generate a random bright colour
+					_col = 0xff * (math.random(64) + 192) * (math.random(64) + 192) * (math.random(64) + 192)
+				end
+
+				_starfield[key+2] = _col
 			end
 
 			--scroll the starfield during gameplay
