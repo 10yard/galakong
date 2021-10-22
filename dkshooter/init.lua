@@ -1,7 +1,7 @@
 -- DK SHOOTER with Galaga theme
 -- by Jon Wilson (10yard)
 --
--- Tested with latest MAME version 0.235
+-- Tested with latest MAME version 0.236
 -- Compatible with MAME versions from 0.196
 --
 -- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
