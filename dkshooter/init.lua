@@ -47,6 +47,8 @@ function dkshooter.startplugin()
 	local last_hit_cleanup = 0
 	local last_starfield = 0
 	local name_entry = 0
+	local started = false
+	local end_of_level = false
 	
 	local enemy_data = 
 		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
@@ -153,22 +155,32 @@ function dkshooter.startplugin()
 			draw_stars()			
 			
 			-- Alternative coin entry sound
-			if mode2 == 0x01 and mem:read_u8(0x6083) == 2 then
+			if mode2 == 0x01 then
+				started = false
+				if	mem:read_u8(0x6083) == 2 then
 					clear_sounds()
 					play("coin")
+				end
 			end
 			
 			-- Alternative intro music
 			if mode2 == 0x07 then
 				if mem:read_u8(0x608a) == 1 then
 					clear_sounds()
-					play("start")
+					if not started then
+						play("start")
+					end
+					started = true
 				end
 			end
 			
 			-- Ship appears on the how high screen
 			if mode2 == 0xa then
 				draw_ship(24, 160, 1)
+				if started then
+					stop(start)
+					started = false
+				end
 			end
 									
 			-- During gameplay
@@ -337,10 +349,13 @@ function dkshooter.startplugin()
 			if mode2 == 0x16 then
 				if mem:read_u8(0x608a) == 12 then
 					clear_sounds()
-					play("level")
+					if not end_of_level then
+						play("level")
+					end
+					end_of_level = true
 				end
 			end
-			
+						
 			-- Alternative name entry music
 			if mode2 == 0x15 then
 				clear_sounds()
