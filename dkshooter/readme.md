@@ -1,6 +1,6 @@
 # **A Donkey Kong Shoot 'Em Up Plugin** #
 
-Tested with latest MAME version 0.235
+Tested with latest MAME version 0.236
 (Compatible with MAME and WolfMAME versions from 0.196 upwards)
 
 Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  Bonus points are awarded for destroying multiple targets.
@@ -16,6 +16,7 @@ There is also a 2 player co-op mode where a 2nd player controls the ship using s
 ## Installing and running
  
 The Plugin is installed by copying the "dkshooter" folder into your MAME plugins folder.
+Currently only Windows OS is supported.  RPi support to follow.
 
 The Plugin is run by adding `-plugin dkshooter` to your MAME arguments e.g.
 
