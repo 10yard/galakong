@@ -1,4 +1,4 @@
-set version=v0.21
+set version=v0.22
 
 set zip_path="C:\Program Files\7-Zip\7z"
 del releases\dkshooter_plugin_%version%.zip
