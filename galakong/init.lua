@@ -134,7 +134,11 @@ function galakong.startplugin()
 			change_title()
 			
 			--Generate a starfield
-			number_of_stars = 375 -- (125 x 3)
+			if os.getenv("GALAKONG_NOSTARS") == "1" then
+				number_of_stars = 0
+			else
+				number_of_stars = 375 -- (125 x 3)
+			end
 			starfield={}
 			math.randomseed(os.time())
 			for _=1, number_of_stars do
