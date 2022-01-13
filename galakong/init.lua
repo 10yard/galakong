@@ -1,7 +1,7 @@
--- DK SHOOTER with Galaga theme
+-- GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong
 -- by Jon Wilson (10yard)
 --
--- Tested with latest MAME version 0.238
+-- Tested with latest MAME version 0.239
 -- Compatible with MAME versions from 0.196
 --
 -- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
@@ -17,19 +17,19 @@
 --      Coin     = Fire
 --
 -- Minimum start up arguments:
---   mame dkong -plugin dkshooter
+--   mame dkong -plugin galakong
 -----------------------------------------------------------------------------------------
 
 local exports = {}
-exports.name = "dkshooter"
-exports.version = "0.22"
-exports.description = "Donkey Kong Shooter"
+exports.name = "galakong"
+exports.version = "0.3"
+exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
-local dkshooter = exports
+local galakong = exports
 
 
-function dkshooter.startplugin()
+function galakong.startplugin()
 	-- Mode of play is set with "P1 Start" and "P2 Start" at beginning of game.  
 	-- 1) Single player mode:  mirrors Jumpman's movements
 	-- 2) Co-op mode:  the ship is controlled by player 2 using "P1 Start", "P2 Start" and "Coin".
@@ -47,6 +47,7 @@ function dkshooter.startplugin()
 	local name_entry = 0
 	local started = false
 	local end_of_level = false
+	local howhigh_ready = false
 	
 	local enemy_data = 
 		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
@@ -97,6 +98,13 @@ function dkshooter.startplugin()
 	char_table["Y"] = 0x29
 	char_table["Z"] = 0x2a
 	char_table["-"] = 0x2c
+	char_table["."] = 0x2b
+	char_table[":"] = 0x2e
+	char_table["("] = 0x30
+	char_table[")"] = 0x31
+	char_table["!"] = 0x38
+	char_table["'"] = 0x3a
+	char_table["?"] = 0xfb
 	
 	local pickup_table = {}
 	pickup_table[1] = {15, 212}
@@ -114,7 +122,7 @@ function dkshooter.startplugin()
 				mac =  manager:machine()
 			end			
 		else
-			print("ERROR: The dkshooter plugin requires MAME version 0.196 or greater.")
+			print("ERROR: The galakong plugin requires MAME version 0.196 or greater.")
 		end						
 		if mac ~= nil then
 			scr = mac.screens[":screen"]
@@ -176,12 +184,25 @@ function dkshooter.startplugin()
 				end
 			end
 			
-			-- Ship appears on the how high screen
+			if mode2 == 0x8 then
+				howhigh_ready = true
+			end
+			
+			-- Ship appears on the how high screen (with alternative messages)
 			if mode2 == 0xa then
 				draw_ship(24, 160, 1)
 				if started then
 					stop(start)
 					started = false
+				end
+				if howhigh_ready then
+					-- random chance of displaying alternative message
+					_rand = math.random(2)
+					if _rand == 1 then
+						write_message(0xc777e, "    ALL YOUR BASE ARE       ")
+						write_message(0xc777f, "     BELONG TO US !!        ")
+					end
+					howhigh_ready = false
 				end
 			end
 									
@@ -487,9 +508,11 @@ function dkshooter.startplugin()
 			end
 
 			--scroll the starfield during gameplay
-			_starfield[key] = _starfield[key] - 0.63
-			if _starfield[key] < 0 then
-				_starfield[key] = 256
+			if not mac.paused then
+				_starfield[key] = _starfield[key] - 0.63
+				if _starfield[key] < 0 then
+					_starfield[key] = 256
+				end
 			end
 		end
 
@@ -518,6 +541,14 @@ function dkshooter.startplugin()
 		end
 	end	
 	
+	function write_rom_message(start_address, text)
+		-- write characters of message to DK's ROM
+		local _char_table = char_table
+		for key=1, string.len(text) do
+			mem:write_direct_u8(start_address + (key - 1), _char_table[string.sub(text, key, key)])
+		end
+	end
+	
 	function get_score_segment(address)
 		return string.format("%02d", string.format("%x", mem:read_u8(address)))
 	end
@@ -528,14 +559,29 @@ function dkshooter.startplugin()
 	
 	function change_title()
 		if emu.romname() == "dkong" then
-			-- Change high score text in rom to DK SHOOTER
-			for k, i in pairs({0x14,0x1b,0x10,0x23,0x18,0x1f,0x1f,0x24,0x15,0x22}) do
-				mem:write_direct_u8(0x36b4 + k - 1, i)
-			end
+			-- no error checking, pay attention to string lengths, also you need to YELL, only caps
+			-- change "HIGH SCORE" to "DK SHOOTER"
+			-- HIGH SCORE is 10 characters, pad with space if necessary
+			--                        1234567890
+			write_rom_message(0x36b4," GALAKONG ")
+
 			-- Change "HOW HIGH CAN YOU GET" text in rom to "HOW UP CAN YOU SCHMUP ?"
-			for k, i in pairs({0x18,0x1f,0x27,0x10,0x25,0x20,0x10,0x13,0x11,0x1e,0x10,0x29,0x1f,0x25,0x10,0x23,0x13,0x18,0x1d,0x25,0x20,0x10,0xfb}) do
-				mem:write_direct_u8(0x36ce + k - 1, i)
-			end
+			-- how high is 23 characters, pad with space if necessary
+			--                        12345678901234567890123
+			write_rom_message(0x36ce,"HOW UP CAN YOU SCHMUP?")
+			
+			-- high score entries are 12 character no need to pad with spaces
+			--                          123456789012
+			--1st
+			--write_rom_message(0x3574,"PAC-MAN")
+			--2nd
+			--write_rom_message(0x3596,"ATE")
+			--3rd
+			--write_rom_message(0x35b8,"MY")
+			--4th
+			--write_rom_message(0x35da,"HAMSTER")
+			--5th
+			--write_rom_message(0x35fc,"!!!:::::!!!!")
 		end
 	end
 	
@@ -558,9 +604,9 @@ function dkshooter.startplugin()
 	function play(sound, volume)
 		volume = volume or 100
 		if is_pi then
-			io.popen("aplay -q plugins/dkshooter/sounds/"..sound..".wav &")
+			io.popen("aplay -q plugins/galakong/sounds/"..sound..".wav &")
 		else
-			io.popen("start plugins/dkshooter/bin/sounder.exe /volume "..tostring(volume).." /id "..sound.." /stopbyid "..sound.." plugins/dkshooter/sounds/"..sound..".wav")
+			io.popen("start plugins/galakong/bin/sounder.exe /volume "..tostring(volume).." /id "..sound.." /stopbyid "..sound.." plugins/galakong/sounds/"..sound..".wav")
 		end
 	end
 	
@@ -568,7 +614,7 @@ function dkshooter.startplugin()
 		if is_pi then
 			io.popen("pkill aplay &")
 		else
-			io.popen("start plugins/dkshooter/bin/sounder.exe /stop")
+			io.popen("start plugins/galakong/bin/sounder.exe /stop")
 		end
 	end
 	
