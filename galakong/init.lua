@@ -10,11 +10,15 @@
 -- The default mode is single player,  with your ship following Jumpman's position.
 -- The jump button also shoots.
 -- Jumpman can control the ship independently when he is on a ladder .
-
+--
 -- There is also a 2 player co-op mode where a 2nd player controls the ship using separate controls.
 -- 		P1 Start = Left
 --      P2 Start = Right
 --      Coin     = Fire
+--
+-- The hack features a scrolling starfield background.
+-- You can disable the starfield by setting an environmental variable before you launch MAME.
+-- SET GALAKONG_NOSTARS=1
 --
 -- Minimum start up arguments:
 --   mame dkong -plugin galakong
@@ -22,7 +26,7 @@
 
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.3"
+exports.version = "0.31"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -55,6 +59,7 @@ function galakong.startplugin()
 		 0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550,
 		 0x65a0, 0x65b0, 0x65c0, 0x65d0, 0x65e0, 0x65f0}
 
+	local BLACK = 0xff000000
 	local WHITE = 0xffdedede
 	local RED = 0xffff0000
 	local BLUE = 0xff0068de	
@@ -496,9 +501,14 @@ function galakong.startplugin()
 		
 		for key=1, number_of_stars, 3 do
 			_ypos, _xpos, _col = _starfield[key], _starfield[key+1], _starfield[key+2]
-					
-			scr:draw_box(_ypos, _xpos, _ypos+1, _xpos+1, _col, _col)
+								
 
+			--Only display a star when the video pixel is black.   This ensures stars only appear in background.
+			--NOTE: There is an offset when reading pixels (0, 16).  This was a pain in the ass to work out!
+			if scr:pixel(_ypos, _xpos + 16) == BLACK and scr:pixel(_ypos + 1, _xpos + 17) == BLACK then
+				scr:draw_box(_ypos, _xpos, _ypos + 1, _xpos + 1, _col, _col)
+			end
+			
 			--do we regenerate the starfield colours
 			if clock - last_starfield > 0.15 then
 
