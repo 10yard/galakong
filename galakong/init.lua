@@ -43,26 +43,34 @@ function galakong.startplugin()
 	local missile_y
 	local missile_x	
 	local bonus = 0
-	local pickup = false
 	local hit_count = 0
 	local last_bonus = 0
 	local last_hit_cleanup = 0
 	local last_starfield = 0
 	local name_entry = 0
+	local million_wraps = 0
+	local pickup = false
 	local started = false
 	local end_of_level = false
 	local howhigh_ready = false
 	
+	local BLACK = 0xff000000
+	local WHITE = 0xffdedede
+	local RED = 0xffff0000
+	local BLUE = 0xff0068de	
+
 	local enemy_data = 
 		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
 		 0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 		 0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550,
 		 0x65a0, 0x65b0, 0x65c0, 0x65d0, 0x65e0, 0x65f0}
-
-	local BLACK = 0xff000000
-	local WHITE = 0xffdedede
-	local RED = 0xffff0000
-	local BLUE = 0xff0068de	
+	
+	-- Position of shield pickup by stage number
+	local pickup_table = {}
+	pickup_table[1] = {15, 212}
+	pickup_table[2] = {8, 208}
+  	pickup_table[3] = {145, 188}
+	pickup_table[4] = {8, 192}
 	
 	local char_table = {}
 	char_table["0"] = 0x00
@@ -111,12 +119,6 @@ function galakong.startplugin()
 	char_table["'"] = 0x3a
 	char_table["?"] = 0xfb
 	
-	local pickup_table = {}
-	pickup_table[1] = {15, 212}
-	pickup_table[2] = {8, 208}
-  	pickup_table[3] = {145, 188}
-	pickup_table[4] = {8, 192}
-
 	function initialize()
 		is_pi = is_pi()
 		play("load")	
@@ -200,6 +202,7 @@ function galakong.startplugin()
 						play("start")
 					end
 					started = true
+					million_wraps = 0
 				end
 			end
 			
@@ -223,6 +226,11 @@ function galakong.startplugin()
 					end
 					howhigh_ready = false
 				end
+				
+				-- Pace calculation
+				---------------------------------------------------------------------------------
+				total = tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + (1000000 * million_wraps)
+				--print(total)
 			end
 									
 			-- During gameplay
@@ -264,6 +272,7 @@ function galakong.startplugin()
 					--visualise jumpman y, x position
 					--scr:draw_box(256 - jumpman_y, jumpman_x, 256 - jumpman_y, jumpman_x, WHITE, WHITE)
 					
+					-- Test for Jumpman collision with pickup
 					if jumpman_x >= pickup_x and jumpman_x <= pickup_x + 7 and 256 - jumpman_y <= pickup_y + 12 and 256 - jumpman_y >= pickup_y then
 						if not pickup then
 							play("pickup")
@@ -355,14 +364,21 @@ function galakong.startplugin()
 											
 											-- handle million points wrap around
 											if tonumber(score) >= 1000000 then
-												score = string.format("%06d", 1000000 - tonumber(score))
+												million_wraps = million_wraps + 1
+												score = string.format("%06d", tonumber(score) - 1000000)
 											end
 											
 											set_score_segment(0x60b4, string.sub(score, 1,2))
 											set_score_segment(0x60b3, string.sub(score, 3,4))
 											set_score_segment(0x60b2, string.sub(score, 5,6))
+											
 											-- update score on screen
-											write_message(0x7781, score) 
+											write_message(0x7781, score)
+											
+											-- write millions on screen
+											if million_wraps > 0 then
+												-write_message(0x77a1, million_wraps)
+											end
 										end
 									end
 								end
