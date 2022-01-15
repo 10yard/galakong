@@ -114,7 +114,7 @@ function galakong.startplugin()
 	local pickup_table = {}
 	pickup_table[1] = {15, 212}
 	pickup_table[2] = {8, 208}
-	pickup_table[3] = {48, 212}
+  	pickup_table[3] = {145, 188}
 	pickup_table[4] = {8, 192}
 
 	function initialize()
@@ -150,25 +150,35 @@ function galakong.startplugin()
 				table.insert(starfield, math.random(255))
 				table.insert(starfield, math.random(223))
 				table.insert(starfield, 0xff000000)
-			end
+			end			
 		end
 	end
 	
 	function main()
 		if cpu ~= nil then
 			local mode2 = mem:read_u8(0x600a)
-			local stage = mem:read_u8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets
+			local stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-elevator, 4-rivets
 							
-			-- Do not allow alternating 1UP, 2UP style gameplay.  We have a co-op mode for 2 players.
+			-- CO-OP mode.  Do not allow alternating 1UP, 2UP style gameplay.
+			mem:write_direct_u8(0x6048, 0x00)
 			if mem:read_u8(0x600f) == 1 then
 				play_mode = 2
 				mem:write_direct_u8(0x600d, 0x00)
 				mem:write_direct_u8(0x600e, 0x00)
 				mem:write_direct_u8(0x600f, 0x00)
 			end
-			
+			if mode2 == 0x10 then
+				--reset to default 1 player mode at end of game
+				play_mode = 1
+			end
 			if play_mode == 2 then
 				write_message(0x7504, "CO-OP")
+			end
+
+			-- Max coins inserted is fixed at 2
+			-- Prevent increasing stupid amounts when CO-OP coin button is used
+			if mem:read_u8(0x6001) > 2 then
+				mem:write_direct_u8(0x6001, 0x02)
 			end
 			
 			draw_stars()			
@@ -222,7 +232,7 @@ function galakong.startplugin()
 				local jumpman_y = mem:read_u8(0x6205)
 				local left, right, fire = get_inputs()
 				local clock = os.clock()
-				
+								
 				if mode2 == 0xb then
 					-- reset some things
 					pickup = false
@@ -247,7 +257,14 @@ function galakong.startplugin()
 					local pickup_y = pickup_table[stage][1]
 					local pickup_x = pickup_table[stage][2]
 					draw_pickup(pickup_y, pickup_x)
-					if jumpman_x >= pickup_x - 4 and jumpman_x <= pickup_x + 4 and 256 - jumpman_y <= pickup_y + 8 then
+
+					--TESTS
+					--visualise hit box for shield pickup
+					--scr:draw_box(pickup_y + 12, pickup_x, pickup_y, pickup_x + 7, RED, RED)
+					--visualise jumpman y, x position
+					--scr:draw_box(256 - jumpman_y, jumpman_x, 256 - jumpman_y, jumpman_x, WHITE, WHITE)
+					
+					if jumpman_x >= pickup_x and jumpman_x <= pickup_x + 7 and 256 - jumpman_y <= pickup_y + 12 and 256 - jumpman_y >= pickup_y then
 						if not pickup then
 							play("pickup")
 						end
@@ -335,6 +352,12 @@ function galakong.startplugin()
 										
 											--update score in ram
 											score = string.format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
+											
+											-- handle million points wrap around
+											if tonumber(score) >= 1000000 then
+												score = string.format("%06d", 1000000 - tonumber(score))
+											end
+											
 											set_score_segment(0x60b4, string.sub(score, 1,2))
 											set_score_segment(0x60b3, string.sub(score, 3,4))
 											set_score_segment(0x60b2, string.sub(score, 5,6))
