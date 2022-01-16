@@ -26,7 +26,7 @@
 
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.31"
+exports.version = "0.32"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -233,7 +233,7 @@ function galakong.startplugin()
 				
 				-- Pace calculation
 				---------------------------------------------------------------------------------
-				total = tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + (1000000 * million_wraps)
+				--total = tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + (1000000 * million_wraps)
 				--print(total)
 			end
 									
@@ -424,8 +424,6 @@ function galakong.startplugin()
 				if million_wraps > 0 then
 					mem:write_u8(0x77a1, 0x70 + million_wraps)
 				end
-
-
 			end
 			
 			-- Alternative end of level music
@@ -503,7 +501,6 @@ function galakong.startplugin()
 		scr:draw_box(y+2, x+3, y+3, x+4, BLUE, BLUE)
 		scr:draw_box(y+3, x+4, y+4, x+5, BLUE, BLUE)
 		scr:draw_box(y+4, x+5, y+5, x+6, BLUE, BLUE)
-
 	end
 
 	function draw_ship(y, x)
