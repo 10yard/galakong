@@ -48,6 +48,8 @@ function galakong.startplugin()
 	local last_hit_cleanup = 0
 	local last_starfield = 0
 	local name_entry = 0
+	local score = "000000"
+	local last_score = "000000"
 	local million_wraps = 0
 	local pickup = false
 	local started = false
@@ -202,6 +204,8 @@ function galakong.startplugin()
 						play("start")
 					end
 					started = true
+					score = "000000"
+					last_score = "000000"
 					million_wraps = 0
 				end
 			end
@@ -359,26 +363,16 @@ function galakong.startplugin()
 											mem:write_u8(0x6a33, 256 - missile_y)
 											last_bonus = clock
 										
-											--update score in ram
-											score = string.format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
-											
-											-- handle million points wrap around
-											if tonumber(score) >= 1000000 then
-												million_wraps = million_wraps + 1
-												score = string.format("%06d", tonumber(score) - 1000000)
-											end
-											
+											--7 digits for the calculation purposes incase we tick over the million
+											score = string.format("%07d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)																						
+											--update 6 digit score in ram 
+											score = string.sub(score, 2, 7)
 											set_score_segment(0x60b4, string.sub(score, 1,2))
 											set_score_segment(0x60b3, string.sub(score, 3,4))
 											set_score_segment(0x60b2, string.sub(score, 5,6))
 											
 											-- update score on screen
-											write_message(0x7781, score)
-											
-											-- write millions on screen
-											if million_wraps > 0 then
-												-write_message(0x77a1, million_wraps)
-											end
+											write_message(0x7781, score)											
 										end
 									end
 								end
@@ -392,7 +386,7 @@ function galakong.startplugin()
 							end
 						end
 					end
-					
+										
 					-- Clean up any destroyed fireballs
 					if clock - last_hit_cleanup > 0.25 then
 						for _, address in pairs(enemy_data) do
@@ -418,6 +412,20 @@ function galakong.startplugin()
 						draw_ship(ship_y, ship_x)
 					end
 				end
+				
+				-- Check for wrapping of score at million
+				score = string.format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)))
+				if tonumber(score) < 5000 and tonumber(score) < tonumber(last_score) then
+					million_wraps = million_wraps + 1
+				end
+				last_score = score
+				
+				-- write millions on screen
+				if million_wraps > 0 then
+					mem:write_u8(0x77a1, 0x70 + million_wraps)
+				end
+
+
 			end
 			
 			-- Alternative end of level music
