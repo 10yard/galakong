@@ -2,7 +2,7 @@
 -- by Jon Wilson (10yard)
 --
 -- Tested with latest MAME version 0.239
--- Compatible with MAME versions from 0.196
+-- Fully compatible with all MAME versions from 0.227
 --
 -- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
 -- Bonus points are awarded for destroying multiple targets.
@@ -69,6 +69,7 @@ function galakong.startplugin()
 	logo_palette["&"] = 0xffd2aa49
 	logo_palette["'"] = 0xff6161ff
 	logo_palette["("] = 0xfffcffff
+	logo_palette["+"] = 0xff0d9ca3
 	logo_palette["*"] = 0xff000000
 	
 	local galakong_logo_data = {
@@ -109,21 +110,21 @@ function galakong.startplugin()
 	"            $$                                                                                      "}
 
 	local yard_logo_data = {
-	"  !                                   ",
-	" !!                               !!  ",
-	"!!!    !!!!                         ! ",
-	"  !   !    !                         !",
-	"  !   !    !                         !",
-	"  !   !    !                         !",
-	"  !   !    !  !  !    !!!   !!!   !!!!",
-	"  !   !    ! !!  !  !!  !  ! !  !!   !",
-	"  !    !  !   ! !! ! !  ! !  ! ! !  !!",
-	"  !     !!    !! !!  !!!!!   !!  !!!! ",
-	"                 !                    ",
-	"                 !                    ",
-	"                 !                    ",
-	"              !  !                    ",
-	"               !!                     "}
+	"  +                                   ",
+	" ++                               ++  ",
+	"+++    ++++                         + ",
+	"  +   +    +                         +",
+	"  +   +    +                         +",
+	"  +   +    +                         +",
+	"  +   +    +  +  +    +++   +++   ++++",
+	"  +   +    + ++  +  ++  +  + +  ++   +",
+	"  +    +  +   + ++ + +  + +  + + +  ++",
+	"  +     ++    ++ ++  +++++   ++  ++++ ",
+	"                 +                    ",
+	"                 +                    ",
+	"                 +                    ",
+	"              +  +                    ",
+	"               ++                     "}
 	
 	local enemy_data = 
 		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
@@ -254,7 +255,8 @@ function galakong.startplugin()
 			-- display GalaKong logo on initial screen
 			if mode2 == 0x01 then
 				draw_logo(galakong_logo_data, 224, 60)
-				draw_logo(yard_logo_data, 20, 174)
+				draw_logo(yard_logo_data, 18, 174)
+				write_message(0x77be, " VERSION "..exports.version)
 			end
 						
 			-- Alternative coin entry sound

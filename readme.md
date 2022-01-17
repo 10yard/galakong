@@ -1,7 +1,7 @@
 # **GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong** #
 
 Tested with latest MAME version 0.239
-(Compatible with MAME and WolfMAME versions from 0.196 upwards)
+Fully compatible with all MAME versions from 0.227
 
 Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  Bonus points are awarded for destroying multiple targets.
 
