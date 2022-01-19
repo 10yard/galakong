@@ -7,14 +7,17 @@ Fully compatible with all MAME versions from 0.227
 Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  Bonus points are awarded for destroying multiple targets.
 
 
-![GalaKong Plugin Screenshots](https://i.imgur.com/SBIvaEH.png)
+![GalaKong Plugin Screenshots](https://i.imgur.com/R3BX3Wv.png)
 
 
 The default mode is single player,  with your ship following Jumpman's position.  Jumpman can control the ship independently when he is on a ladder.  The jump button also shoots.
 
 There is also a 2 player co-op mode where a 2nd player controls the ship using separate controls.
- 	P1 Start = Left
-    P2 Start = Right
+ 	
+	P1 Start = Left
+    
+	P2 Start = Right
+	
 	Coin     = Fire
 
 The hack features a scrolling starfield background.
