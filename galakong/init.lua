@@ -184,7 +184,7 @@ function galakong.startplugin()
 	char_table[")"] = 0x31
 	char_table["!"] = 0x38
 	char_table["'"] = 0x3a
-	char_table["*"] = 0x7c -- horizontal bar
+	char_table["="] = 0x7c -- horizontal bar
 	char_table["?"] = 0xfb
 
 	local total_shots = {}
@@ -254,7 +254,7 @@ function galakong.startplugin()
 				game_stats()
 			end
 			if play_mode == 2 then
-				write_message(0x7504, "CO-OP")
+				write_ram_message(0x7504, "CO-OP")
 			end
 
 			if mode2 == 0x01 then
@@ -271,7 +271,7 @@ function galakong.startplugin()
 			if mode2 == 0x01 then
 				draw_logo(galakong_logo_data, 224, 60)
 				draw_logo(yard_logo_data, 19, 175)
-				write_message(0x77be, " VERSION "..exports.version)
+				write_ram_message(0x77be, " VERSION "..exports.version)
 			end
 						
 			-- Alternative coin entry sound
@@ -312,8 +312,8 @@ function galakong.startplugin()
 					-- random chance of displaying alternative message
 					_rand = math.random(2)
 					if _rand == 1 then
-						write_message(0xc777e, "    ALL YOUR BASE ARE       ")
-						write_message(0xc777f, "     BELONG TO US !!        ")
+						write_ram_message(0xc777e, "    ALL YOUR BASE ARE       ")
+						write_ram_message(0xc777f, "     BELONG TO US !!        ")
 					end
 					howhigh_ready = false
 				end
@@ -456,7 +456,7 @@ function galakong.startplugin()
 											set_score_segment(0x60b2, string.sub(score, 5,6))
 											
 											-- update score on screen
-											write_message(0x7781, score)																						
+											write_ram_message(0x7781, score)
 										end
 									end
 								end
@@ -722,17 +722,17 @@ function galakong.startplugin()
 	end
 
 	function stats_box(title, var1, var2, var3)
-		write_message(0x774e, "**********************")
-		write_message(0x768e, title)
-		write_message(0x774f, "                      ")
-		write_message(0x7750, "                      ")
-		write_message(0x7751, "                      ")
-		write_message(0x7752, "                      ")
-		write_message(0x7753, "                      ")
-		write_message(0x7754, "**********************")
-		write_message(0x7730, "SHOTS FIRED:   "..var1)
-		write_message(0x7731, "NUMBER OF HITS:"..var2)
-		write_message(0x7732, "HIT-MISS RATIO:"..var3)
+		write_ram_message(0x774e, "======================")
+		write_ram_message(0x768e, title)
+		write_ram_message(0x774f, "                      ")
+		write_ram_message(0x7750, "                      ")
+		write_ram_message(0x7751, "                      ")
+		write_ram_message(0x7752, "                      ")
+		write_ram_message(0x7753, "                      ")
+		write_ram_message(0x7754, "======================")
+		write_ram_message(0x7730, "SHOTS FIRED:   "..var1)
+		write_ram_message(0x7731, "NUMBER OF HITS:"..var2)
+		write_ram_message(0x7732, "HIT-MISS RATIO:"..var3)
 	end
 
 	function int_to_bin(x)
@@ -746,7 +746,7 @@ function galakong.startplugin()
 		return string.format("%08d", ret)
     end	
 	
-	function write_message(start_address, text)
+	function write_ram_message(start_address, text)
 		-- write characters of message to DK's video ram
 		local _char_table = char_table
 		for key=1, string.len(text) do
