@@ -184,7 +184,7 @@ function galakong.startplugin()
 	char_table[")"] = 0x31
 	char_table["!"] = 0x38
 	char_table["'"] = 0x3a
-	char_table["x"] = 0xfe -- cross box
+	char_table["*"] = 0x7c -- horizontal bar
 	char_table["?"] = 0xfb
 
 	local total_shots = {}
@@ -692,23 +692,18 @@ function galakong.startplugin()
 	end
 		
 	function level_stats(shots, hits)
+		local format = string.format
 		local _shots = shots or 0
 		local _hits = hits or 0
 		local _ratio = 0
 		if _shots > 0 and _hits > 0 then
 			_ratio = (_hits / _shots) * 100
 		end
-		write_message(0x7750, "xxxxxLEVEL STATSxxxxxx")
-		write_message(0x7751, "x                    x")
-		write_message(0x7752, "x                    x")
-		write_message(0x7753, "x                    x")
-		write_message(0x7754, "xxxxxxxxxxxxxxxxxxxxxx")
-		write_message(0x7731, "SHOTS FIRED:   "..string.format("%d", _shots) )
-		write_message(0x7732, "NUMBER OF HITS:"..string.format("%d", _hits) )
-		write_message(0x7733, "HIT-MISS RATIO:"..string.format("%.1f", _ratio))
+		stats_box("LEVEL STATS", format("%d", _shots), format("%d", _hits), format("%.1f", _ratio))
 	end
 	
 	function game_stats()
+		local format = string.format
 		_shots = 0
 		_hits = 0
 		_ratio = 0
@@ -723,14 +718,21 @@ function galakong.startplugin()
 		if _shots > 0 and _hits > 0 then
 			_ratio = (_hits / _shots) * 100
 		end
-		write_message(0x7750, "xxxxxxGAME STATSxxxxxx")
-		write_message(0x7751, "x                    x")
-		write_message(0x7752, "x                    x")
-		write_message(0x7753, "x                    x")
-		write_message(0x7754, "xxxxxxxxxxxxxxxxxxxxxx")
-		write_message(0x7731, "SHOTS FIRED:   "..string.format("%d", _shots) )
-		write_message(0x7732, "NUMBER OF HITS:"..string.format("%d", _hits) )
-		write_message(0x7733, "HIT-MISS RATIO:"..string.format("%.1f", _ratio))		
+		stats_box("GAME STATS", format("%d", _shots), format("%d", _hits), format("%.1f", _ratio))
+	end
+
+	function stats_box(title, var1, var2, var3)
+		write_message(0x774e, "**********************")
+		write_message(0x768e, title)
+		write_message(0x774f, "                      ")
+		write_message(0x7750, "                      ")
+		write_message(0x7751, "                      ")
+		write_message(0x7752, "                      ")
+		write_message(0x7753, "                      ")
+		write_message(0x7754, "**********************")
+		write_message(0x7730, "SHOTS FIRED:   "..var1)
+		write_message(0x7731, "NUMBER OF HITS:"..var2)
+		write_message(0x7732, "HIT-MISS RATIO:"..var3)
 	end
 
 	function int_to_bin(x)
