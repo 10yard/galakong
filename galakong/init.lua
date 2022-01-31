@@ -26,7 +26,7 @@
 
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.4"
+exports.version = "0.41"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -136,7 +136,7 @@ function galakong.startplugin()
 	local pickup_table = {}
 	pickup_table[1] = {15, 212}
 	pickup_table[2] = {8, 208}
-  	pickup_table[3] = {145, 188}
+  	pickup_table[3] = {121, 73}
 	pickup_table[4] = {8, 192}
 	
 	local char_table = {}
@@ -184,7 +184,11 @@ function galakong.startplugin()
 	char_table[")"] = 0x31
 	char_table["!"] = 0x38
 	char_table["'"] = 0x3a
+	char_table["x"] = 0xfe
 	char_table["?"] = 0xfb
+	
+	total_shots = {}
+	total_hits = {}
 	
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -227,6 +231,7 @@ function galakong.startplugin()
 		if cpu ~= nil then
 			local mode2 = mem:read_u8(0x600a)
 			local stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-elevator, 4-rivets
+			local level = mem:read_u8(0x6229)
 																	
 			-- CO-OP mode.  Do not allow alternating 1UP, 2UP style gameplay.
 			mem:write_direct_u8(0x6048, 0x00)
@@ -280,6 +285,7 @@ function galakong.startplugin()
 					started = true
 					score, last_score = "000000", "000000"
 					million_wraps = 0
+					total_shots, total_hits = {}, {}
 				end
 			end
 			
@@ -380,6 +386,12 @@ function galakong.startplugin()
 							missile_y = ship_y
 							missile_x = ship_x
 							hit_count = 0
+							
+							if total_shots[level] == nil then
+								total_shots[level] = 1
+							else
+								total_shots[level] = total_shots[level] + 1
+							end
 						end
 											
 						-- animate the missile
@@ -441,7 +453,7 @@ function galakong.startplugin()
 											set_score_segment(0x60b2, string.sub(score, 5,6))
 											
 											-- update score on screen
-											write_message(0x7781, score)											
+											write_message(0x7781, score)																						
 										end
 									end
 								end
@@ -450,6 +462,15 @@ function galakong.startplugin()
 							draw_missile(missile_y, missile_x)
 							missile_y = missile_y + 5
 							if missile_y >= 240 then
+							
+								if bonus > 0 then
+									-- register that the shot was a hit
+									if total_hits[level] == nil then
+										total_hits[level] = 1
+									else
+										total_hits[level] = total_hits[level] + 1
+									end
+								end
 								missile_y = nil
 								bonus = 0
 							end
@@ -494,16 +515,26 @@ function galakong.startplugin()
 					mem:write_u8(0x77a1, 0x70 + million_wraps)
 				end
 			end
+
+			--test
+			--if mode2 == 0xc then
+			--	level_stats(total_shots[level], total_hits[level])
+			--end
 			
 			-- Alternative end of level music
-			if mode2 == 0x16 then
-				if mem:read_u8(0x608a) == 12 then
+			if mode2 == 0x16 then			
+				music = mem:read_u8(0x608a)
+				if music == 12 or music == 5 then				
+					level_stats(total_shots[level], total_hits[level])
+					
 					clear_sounds()
 					if not end_of_level then
 						play("level")
 					end
 					end_of_level = true
 				end
+			else
+				end_of_level = false
 			end
 						
 			-- Alternative name entry music
@@ -662,6 +693,24 @@ function galakong.startplugin()
 		end
 	end
 		
+	function level_stats(shots, hits)
+		local _shots = shots or 0
+		local _hits = hits or 0 
+		local _ratio = 0
+		if _shots > 0 and _hits > 0 then
+			_ratio = (_hits / _shots) * 100
+		end
+		
+		write_message(0x7750, "xxxxxLEVEL STATSxxxxxx")
+		write_message(0x7751, "x                    x")
+		write_message(0x7752, "x                    x")
+		write_message(0x7753, "x                    x")
+		write_message(0x7754, "xxxxxxxxxxxxxxxxxxxxxx")
+		write_message(0x7731, "SHOTS FIRED:   "..string.format("%d", _shots) )
+		write_message(0x7732, "NUMBER OF HITS:"..string.format("%d", _hits) )
+		write_message(0x7733, "HIT-MISS RATIO:"..string.format("%.1f", _ratio))
+	end
+
 	function int_to_bin(x)
 		-- convert integer to binary
 		local ret = ""
