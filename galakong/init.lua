@@ -184,7 +184,8 @@ function galakong.startplugin()
 	char_table[")"] = 0x31
 	char_table["!"] = 0x38
 	char_table["'"] = 0x3a
-	char_table["x"] = 0xfe
+	char_table["#"] = 0x4f --solid block
+	char_table["x"] = 0xfe --cross block
 	char_table["?"] = 0xfb
 	
 	total_shots = {}
@@ -223,7 +224,11 @@ function galakong.startplugin()
 				table.insert(starfield, math.random(255))
 				table.insert(starfield, math.random(223))
 				table.insert(starfield, 0xff000000)
-			end			
+			end	
+			
+			--Add more delay to the GAME OVER screen
+			mem:write_direct_u8(0x132e, 0x36)
+			mem:write_direct_u8(0x132f, 0xff)
 		end
 	end
 	
@@ -246,6 +251,9 @@ function galakong.startplugin()
 			if mode2 == 0x10 then
 				--reset to default 1 player mode at end of game
 				play_mode = 1
+				
+				--display end of game stats
+				game_stats()
 			end
 			if play_mode == 2 then
 				write_message(0x7504, "CO-OP")
@@ -515,11 +523,6 @@ function galakong.startplugin()
 					mem:write_u8(0x77a1, 0x70 + million_wraps)
 				end
 			end
-
-			--test
-			--if mode2 == 0xc then
-			--	level_stats(total_shots[level], total_hits[level])
-			--end
 			
 			-- Alternative end of level music
 			if mode2 == 0x16 then			
@@ -536,7 +539,7 @@ function galakong.startplugin()
 			else
 				end_of_level = false
 			end
-						
+									
 			-- Alternative name entry music
 			if mode2 == 0x15 then
 				clear_sounds()
@@ -710,6 +713,32 @@ function galakong.startplugin()
 		write_message(0x7732, "NUMBER OF HITS:"..string.format("%d", _hits) )
 		write_message(0x7733, "HIT-MISS RATIO:"..string.format("%.1f", _ratio))
 	end
+	
+	function game_stats()
+		_shots = 0
+		_hits = 0
+		_ratio = 0
+		for _level=1,22 do
+			if total_shots[_level] ~= nil then
+				_shots = _shots + total_shots[_level]
+			end
+			if total_hits[_level] ~= nil then
+				_hits = _hits + total_hits[_level]
+			end
+		end
+		if _shots > 0 and _hits > 0 then
+			_ratio = (_hits / _shots) * 100
+		end
+		write_message(0x7750, "######GAME STATS######")
+		write_message(0x7751, "#                    #")
+		write_message(0x7752, "#                    #")
+		write_message(0x7753, "#                    #")
+		write_message(0x7754, "######################")
+		write_message(0x7731, "SHOTS FIRED:   "..string.format("%d", _shots) )
+		write_message(0x7732, "NUMBER OF HITS:"..string.format("%d", _hits) )
+		write_message(0x7733, "HIT-MISS RATIO:"..string.format("%.1f", _ratio))		
+	end
+
 
 	function int_to_bin(x)
 		-- convert integer to binary
