@@ -1,7 +1,7 @@
 -- GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong
 -- by Jon Wilson (10yard)
 --
--- Tested with latest MAME version 0.239
+-- Tested with latest MAME version 0.240
 -- Fully compatible with all MAME versions from 0.227
 --
 -- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
@@ -26,7 +26,7 @@
 
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.41"
+exports.version = "0.5"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -188,8 +188,8 @@ function galakong.startplugin()
 	char_table["x"] = 0xfe --cross block
 	char_table["?"] = 0xfb
 	
-	total_shots = {}
-	total_hits = {}
+	local total_shots = {}
+	local total_hits = {}
 	
 	function initialize()
 		mame_version = tonumber(emu.app_version())
