@@ -184,10 +184,9 @@ function galakong.startplugin()
 	char_table[")"] = 0x31
 	char_table["!"] = 0x38
 	char_table["'"] = 0x3a
-	char_table["#"] = 0x4f --solid block
-	char_table["x"] = 0xfe --cross block
+	char_table["x"] = 0xfe -- cross box
 	char_table["?"] = 0xfb
-	
+
 	local total_shots = {}
 	local total_hits = {}
 	
@@ -214,7 +213,7 @@ function galakong.startplugin()
 			change_title()
 						
 			--Generate a starfield
-			number_of_stars = 270 --(90x3)
+			number_of_stars = 255 --(85x3)
 			if os.getenv("GALAKONG_NOSTARS") == "1" then
 				number_of_stars = 0
 			end
@@ -227,17 +226,16 @@ function galakong.startplugin()
 			end	
 			
 			--Add more delay to the GAME OVER screen
-			mem:write_direct_u8(0x132e, 0x36)
 			mem:write_direct_u8(0x132f, 0xff)
 		end
 	end
 	
 	function main()
 		if cpu ~= nil then
-			local mode2 = mem:read_u8(0x600a)
 			local stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-elevator, 4-rivets
 			local level = mem:read_u8(0x6229)
-																	
+			local mode2 = mem:read_u8(0x600a)
+
 			-- CO-OP mode.  Do not allow alternating 1UP, 2UP style gameplay.
 			mem:write_direct_u8(0x6048, 0x00)
 
@@ -262,7 +260,9 @@ function galakong.startplugin()
 			if mode2 == 0x01 then
 				-- coins entered fixed at 2. Don't display number of credits on bottom line
 				scr:draw_box(0,0, 8, 224, BLACK, BLACK)
-				mem:write_direct_u8(0x6001, 0x02)
+				if mem:read_u8(0x6001) ~= 2 then
+					mem:write_direct_u8(0x6001, 0x02)
+				end
 			end
 			
 			draw_stars(mode2)
@@ -317,11 +317,6 @@ function galakong.startplugin()
 					end
 					howhigh_ready = false
 				end
-				
-				-- Pace calculation
-				---------------------------------------------------------------------------------
-				--total = tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + (1000000 * million_wraps)
-				--print(total)
 			end
 									
 			-- During gameplay
@@ -331,7 +326,7 @@ function galakong.startplugin()
 				local jumpman_y = mem:read_u8(0x6205)
 				local left, right, fire = get_inputs()
 				local clock = os.clock()
-								
+
 				if mode2 == 0xb then
 					-- reset some things
 					pickup = false
@@ -645,7 +640,7 @@ function galakong.startplugin()
 		local _starfield = starfield
 	  	local _ypos, _xpos, _col = 0, 0, 0xff000000
 		local clock = os.clock()
-		
+
 		_stars = number_of_stars
 		if mode2 == 0x01 then
 			_stars = 0
@@ -657,7 +652,7 @@ function galakong.startplugin()
 			--Only display a star when the video pixel is black (for MAME versions from 0.227 which support pixel()).
 			--This ensures stars only appear in background.
 			--NOTE: There is an offset when reading pixels (0, 16).  This was a pain in the ass to work out!
-			if mame_version < 0.227 or (scr:pixel(_ypos, _xpos + 16) == BLACK and scr:pixel(_ypos + 1, _xpos + 17) == BLACK) then
+			if mame_version < 0.227 or (scr:pixel(_ypos, _xpos + 16) == BLACK) then
 				scr:draw_box(_ypos, _xpos, _ypos + 1, _xpos + 1, _col, _col)
 			end
 
@@ -675,7 +670,7 @@ function galakong.startplugin()
 			if not mac.paused then
 				_starfield[key] = _starfield[key] - 0.75
 				if _starfield[key] < 0 then
-					_starfield[key] = 256
+					_starfield[key] = 255
 				end
 			end
 		end
@@ -698,12 +693,11 @@ function galakong.startplugin()
 		
 	function level_stats(shots, hits)
 		local _shots = shots or 0
-		local _hits = hits or 0 
+		local _hits = hits or 0
 		local _ratio = 0
 		if _shots > 0 and _hits > 0 then
 			_ratio = (_hits / _shots) * 100
 		end
-		
 		write_message(0x7750, "xxxxxLEVEL STATSxxxxxx")
 		write_message(0x7751, "x                    x")
 		write_message(0x7752, "x                    x")
@@ -729,16 +723,15 @@ function galakong.startplugin()
 		if _shots > 0 and _hits > 0 then
 			_ratio = (_hits / _shots) * 100
 		end
-		write_message(0x7750, "######GAME STATS######")
-		write_message(0x7751, "#                    #")
-		write_message(0x7752, "#                    #")
-		write_message(0x7753, "#                    #")
-		write_message(0x7754, "######################")
+		write_message(0x7750, "xxxxxxGAME STATSxxxxxx")
+		write_message(0x7751, "x                    x")
+		write_message(0x7752, "x                    x")
+		write_message(0x7753, "x                    x")
+		write_message(0x7754, "xxxxxxxxxxxxxxxxxxxxxx")
 		write_message(0x7731, "SHOTS FIRED:   "..string.format("%d", _shots) )
 		write_message(0x7732, "NUMBER OF HITS:"..string.format("%d", _hits) )
 		write_message(0x7733, "HIT-MISS RATIO:"..string.format("%.1f", _ratio))		
 	end
-
 
 	function int_to_bin(x)
 		-- convert integer to binary
@@ -808,7 +801,6 @@ function galakong.startplugin()
 		for key=0, 32 do
 			s_mem:write_u8(0x0 + key, 0x00)
 		end
-				
 		-- clear soundfx buffer (retain the walking 0x6080 sound)
 		for key=0, 11 do
 			mem:write_u8(0x6081 + key, 0x00)
