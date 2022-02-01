@@ -26,7 +26,7 @@
 
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.5"
+exports.version = "0.51"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -42,19 +42,25 @@ function galakong.startplugin()
 	local ship_x = 230
 	local missile_y
 	local missile_x	
-	local bonus = 0
-	local hit_count = 0
-	local last_bonus = 0
-	local last_hit_cleanup = 0
-	local last_starfield = 0
-	local name_entry = 0
-	local score = "000000"
-	local last_score = "000000"
-	local million_wraps = 0
 	local pickup = false
+		
+	local total_shots = {}
+	local total_hits = {}
+
 	local started = false
 	local end_of_level = false
 	local howhigh_ready = false
+	local name_entry = 0
+	
+	local score = "000000"
+	local last_score = "000000"
+	local million_wraps = 0
+	local bonus = 0
+	local hit_count = 0
+	
+	local last_bonus = 0
+	local last_hit_cleanup = 0
+	local last_starfield = 0
 	
 	local BLACK = 0xff000000
 	local WHITE = 0xffdedede
@@ -68,9 +74,9 @@ function galakong.startplugin()
 	logo_palette["%"] = 0xfffb512c
 	logo_palette["&"] = 0xffd2aa49
 	logo_palette["'"] = 0xff6161ff
-	logo_palette["("] = 0xfffcffff
 	logo_palette["+"] = 0xff0d9ca3
-	logo_palette["*"] = 0xff000000
+	logo_palette["("] = WHITE
+	logo_palette["*"] = BLACK
 	
 	local galakong_logo_data = {
 	"                                           %%$%%%%&&&&&&&%%%%%%%                                    ",
@@ -187,9 +193,6 @@ function galakong.startplugin()
 	char_table["="] = 0x7c -- horizontal bar
 	char_table["?"] = 0xfb
 
-	local total_shots = {}
-	local total_hits = {}
-	
 	function initialize()
 		mame_version = tonumber(emu.app_version())
 		is_pi = is_pi()
@@ -235,6 +238,7 @@ function galakong.startplugin()
 			local stage = mem:read_u8(0x6227)  -- 1-girders, 2-pies, 3-elevator, 4-rivets
 			local level = mem:read_u8(0x6229)
 			local mode2 = mem:read_u8(0x600a)
+			clock = os.clock()
 
 			-- CO-OP mode.  Do not allow alternating 1UP, 2UP style gameplay.
 			mem:write_direct_u8(0x6048, 0x00)
@@ -389,33 +393,37 @@ function galakong.startplugin()
 							missile_y = ship_y
 							missile_x = ship_x
 							hit_count = 0
-							
+
 							if total_shots[level] == nil then
 								total_shots[level] = 1
 							else
 								total_shots[level] = total_shots[level] + 1
 							end
 						end
-											
+
 						-- animate the missile
 						if missile_y ~= nil then
 							-- check for enemy hit
 							for _, address in pairs(enemy_data) do
-								local b_status, enemy_x, enemy_y = mem:read_u8(address), mem:read_u8(address + 3) - 15, 256 - mem:read_u8(address + 5)
-								if b_status ~= 0 and enemy_y < 256 then
+								local b_status, enemy_x, enemy_y = mem:read_u8(address), mem:read_u8(address + 3), mem:read_u8(address + 5)
+								if b_status ~= 0 and enemy_y > 0 and enemy_x ~= 250 then
+									enemy_x = enemy_x - 15
+									enemy_y = 256 - enemy_y
 									if missile_y > enemy_y - 7 and missile_y < enemy_y + 7 and missile_x > enemy_x - 7 and missile_x < enemy_x + 7 then
-										hit_count = hit_count + 1	
-										
+										hit_count = hit_count + 1
+
 										if (address >= 0x6400 and address < 0x6500) or (address >= 0x65a0 and address < 0x6600) then
-											-- destroy a fireball, firefox or pie
-											mem:write_u8(address + 6, 1)   -- flag an unused address for later cleanup								
-											mem:write_u8(address+7, 0x53)  -- switch to blank sprites										
+											-- destroy a fireball, firefox or pie.  Move off screen and clean up later.
+											mem:write_u8(address+0x03, 250)
+											mem:write_u8(address+0x0e, 250)
+											mem:write_u8(address+0x05, 8)
+											mem:write_u8(address+0x0f, 8)
 											last_hit_cleanup = clock
 											missile_y = missile_y + 10     -- move missile further to prevent double-hit
 										elseif address >= 0x6500 and address < 0x65a0 then
-											-- destory a spring, err, move the spring off screen
+											-- destory a spring. Move the spring off screen
 											mem:write_u8(address + 3, 2)
-											mem:write_u8(address + 5, 80)										
+											mem:write_u8(address + 5, 80)
 										else
 											-- destroy a barrel
 											mem:write_u8(address + 3, 0)
@@ -424,21 +432,21 @@ function galakong.startplugin()
 										-- play bonus sound
 										mem:write_u8(0x6085, 0)
 										mem:write_u8(0x6085, 1)
-																				
+
 										-- calculate bonus for destroying multiple enemies.
 										if hit_count == 1 then
 											bonus = 300
 											sprite = 0x7d
-										elseif hit_count == 2 then 
+										elseif hit_count == 2 then
 											bonus = 200  -- +200 = 500 total
 											sprite = 0x7e
 										elseif hit_count == 3 then  -- stop awarding when 800 points is reached 
 											bonus = 300  -- +300 = 800 total
 											sprite = 0x7f
-										else 
+										else
 											bonus = 0
 										end
-																		
+
 										if bonus > 0 then
 											--display bonus points
 											mem:write_u8(0x6a30, missile_x + 15)
@@ -446,26 +454,28 @@ function galakong.startplugin()
 											mem:write_u8(0x6a32, 0x07)
 											mem:write_u8(0x6a33, 256 - missile_y)
 											last_bonus = clock
-										
+
 											--7 digits for the calculation purposes incase we tick over the million
-											score = string.format("%07d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)																						
+											score = string.format("%07d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
 											--update 6 digit score in ram 
 											score = string.sub(score, 2, 7)
 											set_score_segment(0x60b4, string.sub(score, 1,2))
 											set_score_segment(0x60b3, string.sub(score, 3,4))
 											set_score_segment(0x60b2, string.sub(score, 5,6))
-											
+
 											-- update score on screen
 											write_ram_message(0x7781, score)
 										end
 									end
 								end
-							end		
-											
+							end
+
 							draw_missile(missile_y, missile_x)
-							missile_y = missile_y + 5
+							if not mac.paused then
+								missile_y = missile_y + 5
+							end
 							if missile_y >= 240 then
-							
+
 								if bonus > 0 then
 									-- register that the shot was a hit
 									if total_hits[level] == nil then
@@ -481,16 +491,10 @@ function galakong.startplugin()
 					end
 										
 					-- Clean up any destroyed fireballs
-					if clock - last_hit_cleanup > 0.25 then
+					if clock - last_hit_cleanup > 1 then
 						for _, address in pairs(enemy_data) do
-							if mem:read_u8(address + 6) == 1 then
-								mem:write_u8(address, 0)
-								mem:write_u8(address + 6, 0)
-								if stage == 1 or stage == 2 then
-									mem:write_u8(address + 7, 0x3d)
-								else
-									mem:write_u8(address + 7, 0x4d)
-								end
+							if mem:read_u8(address + 3) == 250 then
+								mem:write_u8(address, 0)     -- set status to inactive
 							end
 						end
 					end
@@ -551,40 +555,41 @@ function galakong.startplugin()
 	end
 
 	function get_inputs()
-		left, right, fire = false, false, false
+		local _left, _right, _fire = false, false, false
+		local _input = 0
 		if play_mode == 2 then
-			input = mem:read_u8(0xc7d00)
-			if input >= 128 then
-				fire = true
-				input = input - 128
+			_input = mem:read_u8(0xc7d00)
+			if _input >= 128 then
+				_fire = true
+				_input = _input - 128
 			end		
-			if input == 4 then
-				left = true
+			if _input == 4 then
+				_left = true
 			end
-			if input == 8 then
-				right = true
+			if _input == 8 then
+				_right = true
 			end
 		else
-			input = mem:read_u8(0xc7c00)
-			if input >= 16 and input <= 31 then
-				fire = true
-				input = input - 16
+			_input = mem:read_u8(0xc7c00)
+			if _input >= 16 and _input <= 31 then
+				_fire = true
+				_input = _input - 16
 			end
-			if input == 2 then
-				left = true
+			if _input == 2 then
+				_left = true
 			end
-			if input == 1 then
-				right = true
+			if _input == 1 then
+				_right = true
 			end
 		end
-		return left, right, fire
+		return _left, _right, _fire
 	end
 
 	function draw_missile(y, x)
-		scr:draw_box(y+4, x-1, y+6, x+2, 0xff0000ff, 0xff0000ff)
-		scr:draw_box(y, x, y+4, x+1, 0xffff0000, 0xffff0000)
-		scr:draw_box(y+4, x, y+5, x+1, 0xffffffff, 0xffffffff)
-		scr:draw_box(y+5, x, y+8, x+1, 0xff0000ff, 0xff0000ff)
+		scr:draw_box(y+4, x-1, y+6, x+2, BLUE, BLUE)
+		scr:draw_box(y, x, y+4, x+1, RED, RED)
+		scr:draw_box(y+4, x, y+5, x+1, WHITE, WHITE)
+		scr:draw_box(y+5, x, y+8, x+1, BLUE, BLUE)
 	end
 
 	function draw_pickup(y, x)
@@ -638,10 +643,11 @@ function galakong.startplugin()
 	function draw_stars(mode2)
 		-- draw the starfield background
 		local _starfield = starfield
-	  	local _ypos, _xpos, _col = 0, 0, BLACK
-		local clock = os.clock()
+	  	local _ypos = 0
+		local _xpos = 0
+		local _col = BLACK
+		local _stars = number_of_stars
 
-		_stars = number_of_stars
 		if mode2 == 0x01 then
 			_stars = 0
 		end
@@ -704,9 +710,9 @@ function galakong.startplugin()
 	
 	function game_stats()
 		local format = string.format
-		_shots = 0
-		_hits = 0
-		_ratio = 0
+		local _shots = 0
+		local _hits = 0
+		local _ratio = 0
 		for _level=1,22 do
 			if total_shots[_level] ~= nil then
 				_shots = _shots + total_shots[_level]
