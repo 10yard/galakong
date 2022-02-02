@@ -36,7 +36,7 @@ local galakong = exports
 function galakong.startplugin()
 	-- Mode of play is set with "P1 Start" and "P2 Start" at beginning of game.  
 	-- 1) Single player mode:  mirrors Jumpman's movements
-	-- 2) Co-op mode:  the ship is controlled by player 2 using "P1 Start", "P2 Start" and "Coin".
+	-- 2) Co-op mode:  the ship is controlled by player 2 using "P1", "P2" and "Coin" buttons.
 	local play_mode = 1
 	local ship_y = -10
 	local ship_x = 230
@@ -212,7 +212,7 @@ function galakong.startplugin()
 			mem = cpu.spaces["program"]
 			s_cpu = mac.devices[":soundcpu"]			
 			s_mem = s_cpu.spaces["data"]
-			
+
 			change_title()
 						
 			--Generate a starfield
@@ -221,7 +221,6 @@ function galakong.startplugin()
 				number_of_stars = 0
 			end
 			starfield={}
-			math.randomseed(os.time())
 			for _=1, number_of_stars do
 				table.insert(starfield, math.random(255))
 				table.insert(starfield, math.random(223))
@@ -240,9 +239,31 @@ function galakong.startplugin()
 			local mode2 = mem:read_u8(0x600a)
 			clock = os.clock()
 
+			if mode2 == 0x01 then	-- Initial screen
+				started = false
+
+				-- Coins entered fixed at 2. Don't display number of credits on bottom line
+				scr:draw_box(0,0, 8, 224, BLACK, BLACK)
+				if mem:read_u8(0x6001) ~= 2 then
+					mem:write_direct_u8(0x6001, 0x02)
+				end
+
+				-- Display GalaKong logo
+				draw_logo(galakong_logo_data, 224, 60)
+				draw_logo(yard_logo_data, 19, 175)
+				write_ram_message(0x77be, " VERSION "..exports.version)
+
+				-- Alternative coin entry sound
+				if	mem:read_u8(0x6083) == 2 then
+					clear_sounds()
+					play("coin")
+				end
+			else
+				draw_stars()
+			end
+
 			-- CO-OP mode.  Do not allow alternating 1UP, 2UP style gameplay.
 			mem:write_direct_u8(0x6048, 0x00)
-
 			-- 1 or 2 player game chosen?
 			if mem:read_u8(0x600f) == 1 then
 				play_mode = 2
@@ -250,43 +271,10 @@ function galakong.startplugin()
 				mem:write_direct_u8(0x600e, 0x00)
 				mem:write_direct_u8(0x600f, 0x00)
 			end
-			if mode2 == 0x10 then
-				--reset to default 1 player mode at end of game
-				play_mode = 1
-				
-				--display end of game stats
-				game_stats()
-			end
 			if play_mode == 2 then
 				write_ram_message(0x7504, "CO-OP")
 			end
 
-			if mode2 == 0x01 then
-				-- coins entered fixed at 2. Don't display number of credits on bottom line
-				scr:draw_box(0,0, 8, 224, BLACK, BLACK)
-				if mem:read_u8(0x6001) ~= 2 then
-					mem:write_direct_u8(0x6001, 0x02)
-				end
-			end
-			
-			draw_stars(mode2)
-
-			-- display GalaKong logo on initial screen
-			if mode2 == 0x01 then
-				draw_logo(galakong_logo_data, 224, 60)
-				draw_logo(yard_logo_data, 19, 175)
-				write_ram_message(0x77be, " VERSION "..exports.version)
-			end
-						
-			-- Alternative coin entry sound
-			if mode2 == 0x01 then
-				started = false
-				if	mem:read_u8(0x6083) == 2 then
-					clear_sounds()
-					play("coin")
-				end
-			end
-			
 			-- Alternative intro music
 			if mode2 == 0x07 then
 				if mem:read_u8(0x608a) == 1 then
@@ -300,13 +288,12 @@ function galakong.startplugin()
 					total_shots, total_hits = {}, {}
 				end
 			end
-			
-			if mode2 == 0x8 then
+
+			if mode2 == 0x8 then -- before how high screen
 				howhigh_ready = true
 			end
-			
-			-- Ship appears on the how high screen (with alternative messages)
-			if mode2 == 0xa then
+
+			if mode2 == 0xa then  --how high screen
 				draw_ship(24, 160, 1)
 				if started then
 					stop(start)
@@ -322,7 +309,12 @@ function galakong.startplugin()
 					howhigh_ready = false
 				end
 			end
-									
+
+			if mode2 == 0x10 then -- end of game
+				game_stats()
+				play_mode = 1
+			end
+
 			-- During gameplay
 			---------------------------------------------------------------------------------
 			if mode2 == 0xc or mode2 == 0xb or mode2 == 0xd then
@@ -350,7 +342,7 @@ function galakong.startplugin()
 						ship_y = ship_y - 0.5
 					end
 				end
-												
+
 				if not pickup and mode2 ~= 0xd then
 					local pickup_y, pickup_x = pickup_table[stage][1], pickup_table[stage][2]
 					draw_pickup(pickup_y, pickup_x)
@@ -373,24 +365,24 @@ function galakong.startplugin()
 					if play_mode == 1 and mem:read_u8(0x6215) ~= 1 then
 						-- The ship follows Jumpman X position unless on a ladder
 						if ship_x < jumpman_x then
-							ship_x = ship_x + 1
+							ship_x = math.floor(ship_x + 1)
 						elseif ship_x > jumpman_x then
-							ship_x = ship_x - 1
+							ship_x = math.floor(ship_x - 1)
 						end
 					else
-						if left and ship_x >= 7 then 
+						if left and ship_x >= 7 then
 							ship_x = ship_x - 1.25
 						end
 						if right and ship_x <= 216 then
 							ship_x = ship_x + 1.25
-						end	
+						end
 					end
 
 					if mode2 == 0xc then
 						-- fire a missile
 						if fire and not missile_y then
 							play("shoot")
-							missile_y = ship_y
+							missile_y = 8
 							missile_x = ship_x
 							hit_count = 0
 
@@ -440,7 +432,7 @@ function galakong.startplugin()
 										elseif hit_count == 2 then
 											bonus = 200  -- +200 = 500 total
 											sprite = 0x7e
-										elseif hit_count == 3 then  -- stop awarding when 800 points is reached 
+										elseif hit_count == 3 then  -- stop awarding when 800 points is reached
 											bonus = 300  -- +300 = 800 total
 											sprite = 0x7f
 										else
@@ -457,7 +449,7 @@ function galakong.startplugin()
 
 											--7 digits for the calculation purposes incase we tick over the million
 											score = string.format("%07d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
-											--update 6 digit score in ram 
+											--update 6 digit score in ram
 											score = string.sub(score, 2, 7)
 											set_score_segment(0x60b4, string.sub(score, 1,2))
 											set_score_segment(0x60b3, string.sub(score, 3,4))
@@ -489,7 +481,7 @@ function galakong.startplugin()
 							end
 						end
 					end
-										
+
 					-- Clean up any destroyed fireballs
 					if clock - last_hit_cleanup > 1 then
 						for _, address in pairs(enemy_data) do
@@ -498,37 +490,37 @@ function galakong.startplugin()
 							end
 						end
 					end
-									
+
 					-- clear awarded point sprites
 					if last_bonus ~= 0 and clock - last_bonus > 1 then
 						mem:write_u8(0x6a30, 0x0)
 						last_bonus = 0
 					end
-					
+
 					if mode2 == 0xc then
 						draw_ship(ship_y, ship_x)
 					end
 				end
-				
+
 				-- Check for wrapping of score at million
 				score = string.format("%06d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)))
 				if tonumber(score) < 5000 and tonumber(score) < tonumber(last_score) then
 					million_wraps = million_wraps + 1
 				end
 				last_score = score
-				
+
 				-- write millions on screen
 				if million_wraps > 0 then
 					mem:write_u8(0x77a1, 0x70 + million_wraps)
 				end
 			end
-			
+
 			-- Alternative end of level music
-			if mode2 == 0x16 then			
+			if mode2 == 0x16 then
 				music = mem:read_u8(0x608a)
-				if music == 12 or music == 5 then				
+				if music == 12 or music == 5 then
 					level_stats(total_shots[level], total_hits[level])
-					
+
 					clear_sounds()
 					if not end_of_level then
 						play("level")
@@ -538,7 +530,7 @@ function galakong.startplugin()
 			else
 				end_of_level = false
 			end
-									
+
 			-- Alternative name entry music
 			if mode2 == 0x15 then
 				clear_sounds()
@@ -550,7 +542,7 @@ function galakong.startplugin()
 			if mode2 == 0x14 and name_entry == 1 then
 				stop("name")
 				name_entry = 2
-			end			
+			end
 		end
 	end
 
@@ -640,7 +632,7 @@ function galakong.startplugin()
 		scr:draw_box(_y+7, _x+10, _y+8, _x+11, BLUE, BLUE)
 	end
 
-	function draw_stars(mode2)
+	function draw_stars()
 		-- draw the starfield background
 		local _starfield = starfield
 	  	local _ypos = 0
@@ -648,10 +640,6 @@ function galakong.startplugin()
 		local _col = BLACK
 		local _stars = number_of_stars
 
-		if mode2 == 0x01 then
-			_stars = 0
-		end
-		
 		for key=1, _stars, 3 do
 			_ypos, _xpos, _col = _starfield[key], _starfield[key+1], _starfield[key+2]
 
