@@ -16,7 +16,7 @@
 --      P2 Start = Right
 --      Coin     = Fire
 --
--- The hack features a scrolling starfield background.
+-- The hack features a scrolling starfield background and animated explosions.
 -- You can disable the starfield by setting an environmental variable before you launch MAME.
 -- SET GALAKONG_NOSTARS=1
 --
@@ -26,7 +26,7 @@
 
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.51"
+exports.version = "0.6"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -43,7 +43,9 @@ function galakong.startplugin()
 	local missile_y
 	local missile_x	
 	local pickup = false
-		
+
+	local starfield = {}
+	local explosions = {}
 	local total_shots = {}
 	local total_hits = {}
 
@@ -67,77 +69,220 @@ function galakong.startplugin()
 	local RED = 0xffff0000
 	local BLUE = 0xff0068de	
 
-	local logo_palette = {}
-	logo_palette["!"] = 0xff095562
-	logo_palette["#"] = 0xff4ba49c
-	logo_palette["$"] = 0xfffc0202
-	logo_palette["%"] = 0xfffb512c
-	logo_palette["&"] = 0xffd2aa49
-	logo_palette["'"] = 0xff6161ff
-	logo_palette["+"] = 0xff0d9ca3
-	logo_palette["("] = WHITE
-	logo_palette["*"] = BLACK
+	local graphics_palette = {}
+	graphics_palette["@"] = 0xff095562
+	graphics_palette[":"] = 0xff4ba49c
+	graphics_palette["?"] = 0xfffc0202
+	graphics_palette["%"] = 0xfffb512c
+	graphics_palette["&"] = 0xffd2aa49
+	graphics_palette["'"] = 0xff6161ff
+	graphics_palette["+"] = 0xff0d9ca3
+	graphics_palette["!"] = 0xffff0000
+	graphics_palette["#"] = 0xffffff00
+	graphics_palette["$"] = 0xffdedede
+	graphics_palette["("] = WHITE
+	graphics_palette["*"] = BLACK
 	
 	local galakong_logo_data = {
-	"                                           %%$%%%%&&&&&&&%%%%%%%                                    ",
-	"                                      %%$%%&&&################&&&%%%      #                         ",
-	"                                   %$%&&&#####&&&&&&&&&&&&&&&&#####&&%%% #                          ",
-	"                                %$%&&####&&&&&%%$$$$%%%%%$$$$%%%&&&&##&%%%                          ",
-	"                              %%&&####&&&%%$%%                 %%%$%%&#&#&&%%              %%%&&%   ",
-	"                            %%&&###&&&%$%%   %%                     %$&%&&##&%%         %%&&####&%  ",
-	"                          %%&###&&&%$%     %%&&%                     (# %$%&&#&&%     %%&##&&&##&$  ",
-	"                %$%%%%%%%%&###&&%$%      %%&##&%                    (&     %$%&#&&% %%&##&%$$&##&%  ",
-	"              $%&&&##&&&&###&&%$%      %%&####&%                   (&        %$%&&&%&##&&$% %&#&%   ",
-	"            %%&###&&&#####&&%$%      %$&&&####&%                  ((            $%&###&%%   &##&%   ",
-	"           $&&#&&&%%&####&%$%        %%%%$&###&%         #       ((               $%&#&$   %&#&$    ",
-	"         %%&##&&$%%$&##&&$%              $####&%          %     ((#                 $&&&% %&#&%     ",
-	"        %%&#&&%%   %##&%%                $####%%          && # ((&                   %%&&%&#&%      ",
-	"        %&#&&$     %&&$%                 $####%%           (#(((&                      $&##&&%      ",
-	"       %&#&&$     %&&$   %$%             $####%            &((((##!                    #%#&&%       ",
-	"      $&##&%      $%$  %$&%              %####%      #%#&&&(((((!#  ##'###!#'#      !#&###&!#&&##   ",
-	"     %&##&&%      $$ %%&&&%     %%%%%    %####%       %$%%!&(((&&&#!&&%&'&%%%&#!&# #&$$&!&!&%$%%&'  ",
-	"     %###&$      %$$%&&#&$  %%%&&&#&&%   %####%    %%&&&#!!%((($$&##$$$%!$$$$$%#%& #&$$%!!%$$$$$$&! ",
-	"    $&##&&%      $%&###&%$$%&&######&%   %####%%%%&&#######&!!($$&!&$$$&$$$%%$$&!%##&$$%#&$$$$$$$$&#",
-	"   %&###&$        $&###&&&&&&########&   %####&&&&########&&%!&$$&!&$$$#$$%'#%$$&$&!&$$$#$$$%#&%$$&#",
-	"   %&###&%         %###&$%$$$&#######&   &####%$$$$%&####!#&%*&$$%(%$$%!$$& #&$$& $&&$$$&$$%#  &%%&!",
-	"  %&###&&%         %###&%  %&########%  %&####%  %%&####!##&*#& $$$$$$%!### #&$$&!$$$$$$& $&#   ##' ",
-	"  %####&%         %&####% %&####&####%  %&####%  %####&&###&**&$$$$$$$&!     ##&%'$$$$$$%!$& !#'#   ",
-	" %&#!!!#%        $&#!!!#&%%#!!#%%#!!#%  %#!!!#% %&!!#&$#!!!%**&$$$$$$$#&!      &%'$$$$$$%!$##&%%&&&#",
-	" $&!!!!#&%     %%&#!!!!!#$%#!!&%%#!!#% %$#!!!#% %#!!#%%#!!#%*#&$$$$$$$&!'    !&%&!$$$$$$$#%##&$$$$&#",
-	" %#!!!!#&%$%%%%&#!!!!!!!#&&!!!&%%!!!#%%&&#!!!#% %#!!&$%#!!#%$%&$$$$$$$$#     #$$& $$$$$$$&%###&$$$&#",
-	"%&#!!!!!##&&&&##!!!!!!!!!&&!!!&&#!!!#&&&%#!!!#% %#!!&&#!!!#&&#&$$$%%$$$%!!## #$$&$$%%$$$$&$&# #$$$& ",
-	"%&!!!!!!!!!!!!!!!!!!!!!!#&&!!!!!!!!!!!#%$#!!!#$%&!!!!!!!!!!!#%#$$$%!%$$$&!%&##$$#$$##$$$$& %&#&$$$& ",
-	"%&!!!!!!!!!!!!!!!!!!!!#&%%#!!!!!!#!!!#$%$#!!!&$%&!!!!!!#!!!#%%#$$$%!#$$$$#$%&&$& $$&!&$$$%!$$%$$$$# ",
-	"%%!!!!!!!!!!!##!!!!!#&%$%%#!!!!#&&!#&$**$#!!#&%%&!!!!##&!!#%%*#$$$%##%$$$&!$$$%'$$$&#!%$$%!$$$$$$$# ",
-	" %#!!!!!!!!!#%#!!!#&%$%**$&#!#&&$%#&$***$##&&$*%&###&%$%#&$***'%$$%'*&$$%&#$$%#!$$$&#*#%&&!$$$$$$%' ",
-	" $&#!!!!!##%$$#!#&%$%    %%%%%$% $%$    $&&%%   $%%%$% $&$    #&%&&! ###!'#&&' #$%%&#  ###!&&&#&$&# ",
-	"  $%&&&&&%$$%%#&%$%        %            %$$%     %%    %%      ##         ##   ####            #''  ",
-	"   %$$$$$%  %&%$                                                                                    ",
-	"            $$                                                                                      "}
+		"                                           %%?%%%%&&&&&&&%%%%%%%                                    ",
+		"                                      %%?%%&&&::::::::::::::::&&&%%%      :                         ",
+		"                                   %?%&&&:::::&&&&&&&&&&&&&&&&:::::&&%%% :                          ",
+		"                                %?%&&::::&&&&&%%????%%%%%????%%%&&&&::&%%%                          ",
+		"                              %%&&::::&&&%%?%%                 %%%?%%&:&:&&%%              %%%&&%   ",
+		"                            %%&&:::&&&%?%%   %%                     %?&%&&::&%%         %%&&::::&%  ",
+		"                          %%&:::&&&%?%     %%&&%                     (: %?%&&:&&%     %%&::&&&::&?  ",
+		"                %?%%%%%%%%&:::&&%?%      %%&::&%                    (&     %?%&:&&% %%&::&%??&::&%  ",
+		"              ?%&&&::&&&&:::&&%?%      %%&::::&%                   (&        %?%&&&%&::&&?% %&:&%   ",
+		"            %%&:::&&&:::::&&%?%      %?&&&::::&%                  ((            ?%&:::&%%   &::&%   ",
+		"           ?&&:&&&%%&::::&%?%        %%%%?&:::&%         :       ((               ?%&:&?   %&:&?    ",
+		"         %%&::&&?%%?&::&&?%              ?::::&%          %     ((:                 ?&&&% %&:&%     ",
+		"        %%&:&&%%   %::&%%                ?::::%%          && : ((&                   %%&&%&:&%      ",
+		"        %&:&&?     %&&?%                 ?::::%%           (:(((&                      ?&::&&%      ",
+		"       %&:&&?     %&&?   %?%             ?::::%            &((((::@                    :%:&&%       ",
+		"      ?&::&%      ?%?  %?&%              %::::%      :%:&&&(((((@:  ::':::@:':      @:&:::&@:&&::   ",
+		"     %&::&&%      ?? %%&&&%     %%%%%    %::::%       %?%%@&(((&&&:@&&%&'&%%%&:@&: :&??&@&@&%?%%&'  ",
+		"     %:::&?      %??%&&:&?  %%%&&&:&&%   %::::%    %%&&&:@@%(((??&::???%@?????%:%& :&??%@@%??????&@ ",
+		"    ?&::&&%      ?%&:::&%??%&&::::::&%   %::::%%%%&&:::::::&@@(??&@&???&???%%??&@%::&??%:&????????&:",
+		"   %&:::&?        ?&:::&&&&&&::::::::&   %::::&&&&::::::::&&%@&??&@&???:??%':%??&?&@&???:???%:&%??&:",
+		"   %&:::&%         %:::&?%???&:::::::&   &::::%????%&::::@:&%*&??%(%??%@??& :&??& ?&&???&??%:  &%%&@",
+		"  %&:::&&%         %:::&%  %&::::::::%  %&::::%  %%&::::@::&*:& ??????%@::: :&??&@??????& ?&:   ::' ",
+		"  %::::&%         %&::::% %&::::&::::%  %&::::%  %::::&&:::&**&???????&@     ::&%'??????%@?& @:':   ",
+		" %&:@@@:%        ?&:@@@:&%%:@@:%%:@@:%  %:@@@:% %&@@:&?:@@@%**&???????:&@      &%'??????%@?::&%%&&&:",
+		" ?&@@@@:&%     %%&:@@@@@:?%:@@&%%:@@:% %?:@@@:% %:@@:%%:@@:%*:&???????&@'    @&%&@???????:%::&????&:",
+		" %:@@@@:&%?%%%%&:@@@@@@@:&&@@@&%%@@@:%%&&:@@@:% %:@@&?%:@@:%?%&????????:     :??& ???????&%:::&???&:",
+		"%&:@@@@@::&&&&::@@@@@@@@@&&@@@&&:@@@:&&&%:@@@:% %:@@&&:@@@:&&:&???%%???%@@:: :??&??%%????&?&: :???& ",
+		"%&@@@@@@@@@@@@@@@@@@@@@@:&&@@@@@@@@@@@:%?:@@@:?%&@@@@@@@@@@@:%:???%@%???&@%&::??:??::????& %&:&???& ",
+		"%&@@@@@@@@@@@@@@@@@@@@:&%%:@@@@@@:@@@:?%?:@@@&?%&@@@@@@:@@@:%%:???%@:????:?%&&?& ??&@&???%@??%????: ",
+		"%%@@@@@@@@@@@::@@@@@:&%?%%:@@@@:&&@:&?**?:@@:&%%&@@@@::&@@:%%*:???%::%???&@???%'???&:@%??%@???????: ",
+		" %:@@@@@@@@@:%:@@@:&%?%**?&:@:&&?%:&?***?::&&?*%&:::&%?%:&?***'%??%'*&??%&:??%:@???&:*:%&&@??????%' ",
+		" ?&:@@@@@::%??:@:&%?%    %%%%%?% ?%?    ?&&%%   ?%%%?% ?&?    :&%&&@ :::@':&&' :?%%&:  :::@&&&:&?&: ",
+		"  ?%&&&&&%??%%:&%?%        %            %??%     %%    %%      ::         ::   ::::            :''  ",
+		"   %?????%  %&%?                                                                                    ",
+		"            ??                                                                                      "}
 
 	local yard_logo_data = {
-	"  +                                   ",
-	" ++                               ++  ",
-	"+++    ++++                         + ",
-	"  +   +    +                         +",
-	"  +   +    +                         +",
-	"  +   +    +                         +",
-	"  +   +    +  +  +    +++   +++   ++++",
-	"  +   +    + ++  +  ++  +  + +  ++   +",
-	"  +    +  +   + ++ + +  + +  + + +  ++",
-	"  +     ++    ++ ++  +++++   ++  ++++ ",
-	"                 +                    ",
-	"                 +                    ",
-	"                 +                    ",
-	"              +  +                    ",
-	"               ++                     "}
-	
+		"  +                                   ",
+		" ++                               ++  ",
+		"+++    ++++                         + ",
+		"  +   +    +                         +",
+		"  +   +    +                         +",
+		"  +   +    +                         +",
+		"  +   +    +  +  +    +++   +++   ++++",
+		"  +   +    + ++  +  ++  +  + +  ++   +",
+		"  +    +  +   + ++ + +  + +  + + +  ++",
+		"  +     ++    ++ ++  +++++   ++  ++++ ",
+		"                 +                    ",
+		"                 +                    ",
+		"                 +                    ",
+		"              +  +                    ",
+		"               ++                     "}
+
+	local explode1_data = {
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                !               ",
+		"            !                   ",
+		"             !#!                ",
+		"           ! #!# !              ",
+		"             !#!!               ",
+		"           ! !## !              ",
+		"            ! !!                ",
+		"                !               "}
+
+	local explode2_data = {
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                 !              ",
+		"             !                  ",
+		"           ## ! !  #            ",
+		"            #  ! ! #            ",
+		"           ! ! $$               ",
+		"          !  ### !$! $          ",
+		"            $$$#$$$             ",
+		"             #$!#$  !           ",
+		"          $ !$$$$  !            ",
+		"             ##!$$! #           ",
+		"           !#### !  ##          ",
+		"             ##!  !             ",
+		"             $  !               "}
+
+	local explode3_data = {
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"        !     !   #             ",
+		"           !  $ !  !   #        ",
+		"            # #  $$  !          ",
+		"         !  ##$   $ #           ",
+		"              $ !  !  !         ",
+		"           !  $  !   !          ",
+		"        ##  !  !   # $          ",
+		"          $        # $ !        ",
+		"           $     !  !           ",
+		"        !  $## !                ",
+		"          ! $     !  ! !        ",
+		"             ! !   ## $         ",
+		"         !   !   $ ## $         ",
+		"           !$$   $              ",
+		"           $ $$$       $        ",
+		"        #  # # $  !             "}
+
+	local explode4_data = {
+		"                                ",
+		"                                ",
+		"          !                     ",
+		"                                ",
+		"             ##    $     !      ",
+		"                  $   !         ",
+		"         $      $    $          ",
+		"           $        $           ",
+		"      ##      !  $              ",
+		"   $       #  !       !  $      ",
+		"        $ ##   $##  #           ",
+		"                   $   $     $  ",
+		"                     ##  $      ",
+		"    !   !$            #    !    ",
+		"     $  !        !  $     $     ",
+		"       #    $        !          ",
+		"       # $             $ ##     ",
+		"    $                      !    ",
+		"       !      $     $$    $     ",
+		"                      $         ",
+		"       #  $         #   $       ",
+		"      #  $   !  $!  #    ##     ",
+		"            # $       !         ",
+		"        !   #$    #    $        ",
+		"    !  $       $   $    $       ",
+		"                $    #          ",
+		"           $         #          ",
+		"             $    !             ",
+		"                                ",
+		"                    $           "}
+
+	local explode5_data = {
+		"                !               ",
+		"           #          $       $ ",
+		"   $       #                    ",
+		"    #         $             $   ",
+		"                                ",
+		"        !$        #             ",
+		"                               #",
+		"                        $       ",
+		"   $         $                  ",
+		"                           #    ",
+		"                                ",
+		"                      !         ",
+		"       !                        ",
+		"          #                    !",
+		"                                ",
+		" ##                     $       ",
+		"     !                      #$  ",
+		"                            #   ",
+		"                                ",
+		"                                ",
+		"      $                         ",
+		"                              # ",
+		" $                              ",
+		"                        $       ",
+		"              #                 ",
+		"                                ",
+		"      $   $                     ",
+		"             $       $   !   #  ",
+		"  !      #                    # ",
+		"                  !             ",
+		"   #                       $    ",
+		"  #                             "}
+
+	local animation = {explode5_data, explode4_data, explode3_data, explode2_data, explode1_data}
+	local animation_frames = 30
+
 	local enemy_data = 
 		{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
 		 0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 		 0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550,
 		 0x65a0, 0x65b0, 0x65c0, 0x65d0, 0x65e0, 0x65f0}
-	
+
 	-- Position of shield pickup by stage number
 	local pickup_table = {}
 	pickup_table[1] = {15, 212}
@@ -220,7 +365,6 @@ function galakong.startplugin()
 			if os.getenv("GALAKONG_NOSTARS") == "1" then
 				number_of_stars = 0
 			end
-			starfield={}
 			for _=1, number_of_stars do
 				table.insert(starfield, math.random(255))
 				table.insert(starfield, math.random(223))
@@ -239,7 +383,7 @@ function galakong.startplugin()
 			local mode2 = mem:read_u8(0x600a)
 			clock = os.clock()
 
-			if mode2 == 0x01 then	-- Initial screen
+			if mode2 == 0x01 then -- Initial screen
 				started = false
 
 				-- Coins entered fixed at 2. Don't display number of credits on bottom line
@@ -248,35 +392,35 @@ function galakong.startplugin()
 					mem:write_direct_u8(0x6001, 0x02)
 				end
 
-				-- Display GalaKong logo
+				-- Display GalaKong logo and other bits
 				draw_logo(galakong_logo_data, 224, 60)
 				draw_logo(yard_logo_data, 19, 175)
 				write_ram_message(0x77be, " VERSION "..exports.version)
 
 				-- Alternative coin entry sound
-				if	mem:read_u8(0x6083) == 2 then
+				if mem:read_u8(0x6083) == 2 then
 					clear_sounds()
 					play("coin")
+				end
+
+				-- For CO-OP mode.  Do not allow alternating 1UP-2UP style gameplay.
+				mem:write_direct_u8(0x6048, 0x00)
+				if mem:read_u8(0x600f) == 1 then  -- 2 player game
+					play_mode = 2
+					mem:write_direct_u8(0x600d, 0x00)
+					mem:write_direct_u8(0x600e, 0x00)
+					mem:write_direct_u8(0x600f, 0x00)
 				end
 			else
 				draw_stars()
 			end
 
-			-- CO-OP mode.  Do not allow alternating 1UP, 2UP style gameplay.
-			mem:write_direct_u8(0x6048, 0x00)
-			-- 1 or 2 player game chosen?
-			if mem:read_u8(0x600f) == 1 then
-				play_mode = 2
-				mem:write_direct_u8(0x600d, 0x00)
-				mem:write_direct_u8(0x600e, 0x00)
-				mem:write_direct_u8(0x600f, 0x00)
-			end
+			-- CO-OP appears top-right for 2 player mode
 			if play_mode == 2 then
 				write_ram_message(0x7504, "CO-OP")
 			end
 
-			-- Alternative intro music
-			if mode2 == 0x07 then
+			if mode2 == 0x07 then  -- Intro screen
 				if mem:read_u8(0x608a) == 1 then
 					clear_sounds()
 					if not started then
@@ -294,6 +438,7 @@ function galakong.startplugin()
 			end
 
 			if mode2 == 0xa then  --how high screen
+				explosions = {}
 				draw_ship(24, 160, 1)
 				if started then
 					stop(start)
@@ -301,8 +446,7 @@ function galakong.startplugin()
 				end
 				if howhigh_ready then
 					-- random chance of displaying alternative message
-					_rand = math.random(2)
-					if _rand == 1 then
+					if math.random(2) == 1 then
 						write_ram_message(0xc777e, "    ALL YOUR BASE ARE       ")
 						write_ram_message(0xc777f, "     BELONG TO US !!        ")
 					end
@@ -315,21 +459,18 @@ function galakong.startplugin()
 				play_mode = 1
 			end
 
-			-- During gameplay
-			---------------------------------------------------------------------------------
-			if mode2 == 0xc or mode2 == 0xb or mode2 == 0xd then
+			if mode2 >= 0xb and mode2 <= 0xd then  -- during gameplay
 				local jumpman_x = mem:read_u8(0x6203) - 15
 				local jumpman_y = mem:read_u8(0x6205)
 				local left, right, fire = get_inputs()
-				local clock = os.clock()
 
 				if mode2 == 0xb then
 					-- reset some things
 					pickup = false
-					ship_x = 230
 					missile_y = nil
 					bonus = 0
 					name_entry = 0
+					explosions = {}
 				elseif mode2 == 0xc then
 					-- adjust ship y with jumpman when at screen bottom
 					ship_y = 230 - jumpman_y
@@ -346,18 +487,13 @@ function galakong.startplugin()
 				if not pickup and mode2 ~= 0xd then
 					local pickup_y, pickup_x = pickup_table[stage][1], pickup_table[stage][2]
 					draw_pickup(pickup_y, pickup_x)
-					--visualise hit box for shield pickup with Jumpman's position
-					--scr:draw_box(pickup_y + 12, pickup_x, pickup_y, pickup_x + 7, RED, RED)
-					--scr:draw_box(256 - jumpman_y, jumpman_x, 256 - jumpman_y, jumpman_x, WHITE, WHITE)
 
-					-- Test for Jumpman collision with pickup
+					-- Check for Jumpman collision with pickup
 					if jumpman_x >= pickup_x and jumpman_x <= pickup_x + 7 and 256 - jumpman_y <= pickup_y + 12 and 256 - jumpman_y >= pickup_y then
 						if not pickup then
 							play("pickup")
 						end
-						if play_mode == 2 then
-							ship_x = jumpman_x
-						end
+						ship_x = jumpman_x
 						pickup = true
 					end
 				else
@@ -397,15 +533,20 @@ function galakong.startplugin()
 						if missile_y ~= nil then
 							-- check for enemy hit
 							for _, address in pairs(enemy_data) do
-								local b_status, enemy_x, enemy_y = mem:read_u8(address), mem:read_u8(address + 3), mem:read_u8(address + 5)
-								if b_status ~= 0 and enemy_y > 0 and enemy_x ~= 250 then
+								local enemy_x = mem:read_u8(address + 3)
+								local enemy_y = mem:read_u8(address + 5)
+
+								if mem:read_u8(address) ~= 0 and enemy_y > 0 and enemy_x ~= 250 then
 									enemy_x = enemy_x - 15
 									enemy_y = 256 - enemy_y
 									if missile_y > enemy_y - 7 and missile_y < enemy_y + 7 and missile_x > enemy_x - 7 and missile_x < enemy_x + 7 then
 										hit_count = hit_count + 1
+										exp_y = string.format("%03d", enemy_y)
+										exp_x = string.format("%03d", enemy_x)
 
 										if (address >= 0x6400 and address < 0x6500) or (address >= 0x65a0 and address < 0x6600) then
 											-- destroy a fireball, firefox or pie.  Move off screen and clean up later.
+											explosions[exp_y..exp_x] = animation_frames
 											mem:write_u8(address+0x03, 250)
 											mem:write_u8(address+0x0e, 250)
 											mem:write_u8(address+0x05, 8)
@@ -413,11 +554,13 @@ function galakong.startplugin()
 											last_hit_cleanup = clock
 											missile_y = missile_y + 10     -- move missile further to prevent double-hit
 										elseif address >= 0x6500 and address < 0x65a0 then
-											-- destory a spring. Move the spring off screen
+											-- destroy a spring. Move the spring off screen
+											explosions[exp_y..exp_x] = animation_frames
 											mem:write_u8(address + 3, 2)
 											mem:write_u8(address + 5, 80)
 										else
 											-- destroy a barrel
+											explosions[exp_y..exp_x] = math.ceil(animation_frames / 2)
 											mem:write_u8(address + 3, 0)
 											mem:write_u8(address + 5, 0)
 										end
@@ -500,6 +643,16 @@ function galakong.startplugin()
 					if mode2 == 0xc then
 						draw_ship(ship_y, ship_x)
 					end
+
+					-- animation explosions
+					for location, phase in pairs(explosions) do
+						if phase > 0 then
+							exp_y = string.sub(location, 1,3) + 16
+							exp_x = string.sub(location, 4,6) - 16
+							draw_logo(animation[math.ceil(phase / (animation_frames / 5))], exp_y, exp_x)
+							explosions[location] = phase - 1
+						end
+					end
 				end
 
 				-- Check for wrapping of score at million
@@ -515,12 +668,10 @@ function galakong.startplugin()
 				end
 			end
 
-			-- Alternative end of level music
-			if mode2 == 0x16 then
+			if mode2 == 0x16 then  -- end of level
 				music = mem:read_u8(0x608a)
 				if music == 12 or music == 5 then
 					level_stats(total_shots[level], total_hits[level])
-
 					clear_sounds()
 					if not end_of_level then
 						play("level")
@@ -531,8 +682,7 @@ function galakong.startplugin()
 				end_of_level = false
 			end
 
-			-- Alternative name entry music
-			if mode2 == 0x15 then
+			if mode2 == 0x15 then  -- name entry screen
 				clear_sounds()
 				if name_entry == 0 then
 					name_entry = 1
@@ -634,14 +784,13 @@ function galakong.startplugin()
 
 	function draw_stars()
 		-- draw the starfield background
-		local _starfield = starfield
 	  	local _ypos = 0
 		local _xpos = 0
 		local _col = BLACK
 		local _stars = number_of_stars
 
 		for key=1, _stars, 3 do
-			_ypos, _xpos, _col = _starfield[key], _starfield[key+1], _starfield[key+2]
+			_ypos, _xpos, _col = starfield[key], starfield[key+1], starfield[key+2]
 
 			--Only display a star when the video pixel is black (for MAME versions from 0.227 which support pixel()).
 			--This ensures stars only appear in background.
@@ -657,14 +806,14 @@ function galakong.startplugin()
 					-- generate a random bright colour
 					_col = 0xff * (math.random(64) + 192) * (math.random(64) + 192) * (math.random(64) + 192)
 				end
-				_starfield[key+2] = _col
+				starfield[key+2] = _col
 			end
 
 			--scroll the starfield during gameplay
 			if not mac.paused then
-				_starfield[key] = _starfield[key] - 0.75
-				if _starfield[key] < 0 then
-					_starfield[key] = 255
+				starfield[key] = starfield[key] - 0.75
+				if starfield[key] < 0 then
+					starfield[key] = 255
 				end
 			end
 		end
@@ -679,7 +828,7 @@ function galakong.startplugin()
 			for _x=1, string.len(line) do
 				_col = string.sub(line, _x, _x)
 				if _col ~= " " then
-					scr:draw_box(pos_y -_y, pos_x + _x, pos_y -_y + 1, pos_x +_x + 1, logo_palette[_col], logo_palette[_col])
+					scr:draw_box(pos_y -_y, pos_x + _x, pos_y -_y + 1, pos_x +_x + 1, graphics_palette[_col], graphics_palette[_col])
 				end
 			end
 		end
@@ -729,17 +878,6 @@ function galakong.startplugin()
 		write_ram_message(0x7732 + offset, "HIT-MISS RATIO:"..var3)
 	end
 
-	function int_to_bin(x)
-		-- convert integer to binary
-		local ret = ""
-		while x~=1 and x~=0 do
-			ret = tostring(x%2) .. ret
-			x=math.modf(x/2)
-		end
-		ret = tostring(x)..ret
-		return string.format("%08d", ret)
-    end	
-	
 	function write_ram_message(start_address, text)
 		-- write characters of message to DK's video ram
 		local _char_table = char_table
