@@ -17,8 +17,9 @@
 --      Coin     = Fire
 --
 -- The hack features a scrolling starfield background and animated explosions.
--- You can disable the starfield by setting an environmental variable before you launch MAME.
+-- You can disable some features by setting environmental variables before you launch MAME.
 -- SET GALAKONG_NOSTARS=1
+-- SET GALAKONG_NOEXPLOSIONS=1
 --
 -- Minimum start up arguments:
 --   mame dkong -plugin galakong
@@ -364,6 +365,10 @@ function galakong.startplugin()
 			number_of_stars = 255 --(85x3)
 			if os.getenv("GALAKONG_NOSTARS") == "1" then
 				number_of_stars = 0
+			end
+			if os.getenv("GALAKONG_NOEXPLOSIONS") == "1" then
+				animation = {}
+				animation_frames = 0
 			end
 			for _=1, number_of_stars do
 				table.insert(starfield, math.random(255))

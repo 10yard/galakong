@@ -21,9 +21,11 @@ There is also a 2 player co-op mode where a 2nd player controls the ship using s
 	Coin     = Fire
 
 The hack features a scrolling starfield background and animated explosions.
-You can disable the starfield by setting an environmental variable before you run MAME.
+You can disable some features by setting environmental variables before you launch MAME.
 
 ```SET GALAKONG_NOSTARS=1```
+
+```SET GALAKONG_NOEXPLOSIONS=1```
   
 ## Installing and running
  
