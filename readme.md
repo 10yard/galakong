@@ -15,10 +15,17 @@ The default mode is single player,  with your ship following Jumpman's position.
 There is also a 2 player co-op mode where a 2nd player controls the ship using separate controls.
  	
 	P1 Start = Left
-    
-	P2 Start = Right
-	
+	P2 Start = Right	
 	Coin     = Fire
+
+
+Bonus points for destroying multiple targets.
+
+	1 hit = 200 points
+	2 hits = 500 points
+	3 hits = 800 points
+	4 hits = 1200 points
+
 
 The hack features a scrolling starfield background and animated explosions.
 You can disable some features by setting environmental variables before you launch MAME.
@@ -26,6 +33,7 @@ You can disable some features by setting environmental variables before you laun
 ```SET GALAKONG_NOSTARS=1```
 
 ```SET GALAKONG_NOEXPLOSIONS=1```
+
   
 ## Installing and running
  
