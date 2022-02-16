@@ -594,11 +594,10 @@ function galakong.startplugin()
 											mem:write_u8(address+0xe, 250)
 											mem:write_u8(address+0xf, 8)
 											last_hit_cleanup = _frame
-											missile_y = missile_y + 10     -- move missile further to prevent double-hit
 										elseif address >= 0x6500 and address < 0x65a0 then
 											-- destroy a spring. Move the spring off screen
 											explosions[_exp_y.._exp_x] = animation_frames
-											mem:write_u8(address + 3, 2)
+											mem:write_u8(address + 3, 0)
 											mem:write_u8(address + 5, 80)
 										else
 											-- destroy a barrel
@@ -679,8 +678,8 @@ function galakong.startplugin()
 					if _frame - last_hit_cleanup > 10 then
 						for _, address in pairs(enemy_data) do
 							if mem:read_u8(address + 3) == 250 then
-								mem:write_u8(address, 0)         -- set status to inactive
-								-- clear position
+								-- set status to inactive and clear position
+								mem:write_u8(address, 0)
 								mem:write_u8(address+0x3, 0)
 								mem:write_u8(address+0x5, 0)
 								mem:write_u8(address+0xe, 0)
