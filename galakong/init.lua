@@ -128,6 +128,18 @@ function galakong.startplugin()
 		"   %?????%  %&%?",
 		"            ??"}
 
+	local jr_logo_data = {
+		"  ???????????????????????",
+		" ?(((((((((((((((((((((((?",
+		"?((???(?(?(?((?(?((?((??((?",
+		"?(((?((?(?(??(?(?(?(?(?(?(?",
+		"?(((?((?(?(????(?(?(?(??((?",
+		"?(?(?((?(?(?(??(?(?(?(??((?",
+		"?((?((((?((?((?(?((?((?(?(?",
+		" ?(((((((((((((((((((((((?",
+		"  ???????????????????????"}
+
+
 	local yard_logo_data = {
 		"  +",
 		" ++                               ++",
@@ -354,14 +366,16 @@ function galakong.startplugin()
 		mame_version = tonumber(emu.app_version())
 		is_pi = is_pi()
 		play("load")	
-		if mame_version >= 0.196 then
-			if type(manager.machine) == "userdata" then
-				mac = manager.machine
+		if emu.romname() == "dkong" or emu.romname() == "dkongjr" then
+			if mame_version >= 0.196 then
+				if type(manager.machine) == "userdata" then
+					mac = manager.machine
+				else
+					mac =  manager:machine()
+				end			
 			else
-				mac =  manager:machine()
-			end			
-		else
-			print("ERROR: The galakong plugin requires MAME version 0.196 or greater.")
+				print("ERROR: The galakong plugin requires MAME version 0.196 or greater.")
+			end
 		end
 		if mac ~= nil then
 			scr = mac.screens[":screen"]
@@ -392,6 +406,20 @@ function galakong.startplugin()
 
 			--Add more delay to the GAME OVER screen
 			mem:write_direct_u8(0x132f, 0xff)
+			
+			-- Donkey Kong Junior specific initialisation
+			if emu.romname() == "dkongjr" then
+				enemy_data = 
+					{0x6700, 0x6720, 0x6740, 0x6760, 0x6780, 0x67a0, 0x67c0, 0x67e0, 
+					0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
+					0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550}
+
+				pickup_table[1] = {15, 20}
+				pickup_table[2] = {15, 20}
+				pickup_table[3] = {15, 20}
+				pickup_table[4] = {15, 20}
+			end
+			
 		end
 	end
 	
@@ -424,7 +452,12 @@ function galakong.startplugin()
 				end
 
 				-- Display GalaKong logo and other bits
-				draw_graphic(galakong_logo_data, 224, 60)
+				if emu.romname() == "dkongjr" then
+					draw_graphic(galakong_logo_data, 224, 50)
+					draw_graphic(jr_logo_data, 200, 152)
+				else
+					draw_graphic(galakong_logo_data, 224, 60)
+				end
 				draw_graphic(yard_logo_data, 19, 175)
 				write_ram_message(0x77be, " VERSION "..exports.version)
 
