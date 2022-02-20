@@ -414,10 +414,10 @@ function galakong.startplugin()
 					0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 					0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550}
 
-				pickup_table[1] = {15, 20}
-				pickup_table[2] = {15, 20}
-				pickup_table[3] = {15, 20}
-				pickup_table[4] = {15, 20}
+				pickup_table[1] = {20, 20}
+				pickup_table[2] = {20, 20}
+				pickup_table[3] = {20, 20}
+				pickup_table[4] = {20, 20}				
 			end
 			
 		end
@@ -643,22 +643,40 @@ function galakong.startplugin()
 										mem:write_u8(0x6085, 1)
 
 										-- calculate bonus for destroying multiple enemies.
-										if hit_count == 1 then
-											bonus = 200  -- 200 total
-											_sprite = 0x7c
-										elseif hit_count == 2 then
-											bonus = 300  -- +300 = 500 total
-											_sprite = 0x7e
-										elseif hit_count == 3 then
-											bonus = 300  -- +300 = 800 total
-											_sprite = 0x7f
-										elseif hit_count == 4 then  -- stop awarding at max 1200 points
-											bonus = 400  -- +400 = 1200 total
-											_sprite = 0x76 -- love heart sprite
+										if emu.romname() == "dkongjr" then
+											if hit_count == 1 then
+												bonus = 100  -- 100 total
+												_sprite = 0x79
+											elseif hit_count == 2 then
+												bonus = 100  -- +100 = 200 total
+												_sprite = 0x7a
+											elseif hit_count == 3 then
+												bonus = 200  -- +200 = 400 total
+												_sprite = 0x7c
+											elseif hit_count == 4 then  -- stop awarding at max 1200 points
+												bonus = 400  -- +400 = 800 total
+												_sprite = 0x7d
+											else
+												bonus = 0
+											end										
 										else
-											bonus = 0
+											if hit_count == 1 then
+												bonus = 200  -- 200 total
+												_sprite = 0x7c
+											elseif hit_count == 2 then
+												bonus = 300  -- +300 = 500 total
+												_sprite = 0x7e
+											elseif hit_count == 3 then
+												bonus = 300  -- +300 = 800 total
+												_sprite = 0x7f
+											elseif hit_count == 4 then  -- stop awarding at max 1200 points
+												bonus = 400  -- +400 = 1200 total
+												_sprite = 0x76 -- love heart sprite
+											else
+												bonus = 0
+											end
 										end
-
+										
 										if bonus > 0 then
 											--display bonus points
 											mem:write_u8(0x6a30, missile_x + 15)
