@@ -26,7 +26,7 @@
 -----------------------------------------------------------------------------------------
 local exports = {}
 exports.name = "galakong"
-exports.version = "0.8"
+exports.version = "0.9"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -414,10 +414,10 @@ function galakong.startplugin()
 					0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 					0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550}
 
-				pickup_table[1] = {24, 88}
-				pickup_table[2] = {16, 40}  --ok
-				pickup_table[3] = {8, 109}  --ok
-				pickup_table[4] = {20, 20}				
+				pickup_table[1] = {24, 88}  -- chains
+				pickup_table[2] = {16, 36}  -- vines
+				pickup_table[3] = {8, 109}  -- springboard
+				pickup_table[4] = {20, 20}	-- hideout
 			end
 			
 		end
@@ -647,17 +647,17 @@ function galakong.startplugin()
 										-- calculate bonus for destroying multiple enemies.
 										if emu.romname() == "dkongjr" then
 											if hit_count == 1 then
-												bonus = 100  -- 100 total
-												_sprite = 0x79
-											elseif hit_count == 2 then
-												bonus = 100  -- +100 = 200 total
+												bonus = 200  -- 200 total
 												_sprite = 0x7a
-											elseif hit_count == 3 then
+											elseif hit_count == 2 then
 												bonus = 200  -- +200 = 400 total
 												_sprite = 0x7c
-											elseif hit_count == 4 then  -- stop awarding at max 1200 points
+											elseif hit_count == 3 then
 												bonus = 400  -- +400 = 800 total
 												_sprite = 0x7d
+											elseif hit_count == 4 then  -- stop awarding at max 1200 points
+												bonus = 400  -- +400 = 1200 total
+												_sprite = 0x7e
 											else
 												bonus = 0
 											end										
