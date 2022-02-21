@@ -309,7 +309,14 @@ function galakong.startplugin()
 	pickup_table[2] = {8, 208}
   	pickup_table[3] = {121, 73}
 	pickup_table[4] = {8, 192}
-	
+
+	-- Point scored for multiple missile hits and associated sprite display
+	local bonus_table = {}
+	bonus_table[1] = {200, 0x7c} -- +200 points
+	bonus_table[2] = {300, 0x7e} -- +300 points = 500
+	bonus_table[3] = {300, 0x7f} -- +300 points = 800
+	bonus_table[4] = {400, 0x76} -- +400 points = 1200 (love heart)
+
 	local char_table = {}
 	char_table["0"] = 0x0
 	char_table["1"] = 0x1
@@ -414,10 +421,15 @@ function galakong.startplugin()
 					0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 					0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550}
 
-				pickup_table[1] = {24, 88}  -- chains
-				pickup_table[2] = {16, 36}  -- vines
-				pickup_table[3] = {8, 109}  -- springboard
-				pickup_table[4] = {20, 20}	-- hideout
+				pickup_table[1] = {24, 96} -- springboard
+				pickup_table[2] = {16, 48}  -- vines
+				pickup_table[3] = {8, 144}  -- chains
+				pickup_table[4] = {8, 44}	-- hideout
+
+				bonus_table[1] = {200, 0x7a} -- +200 points
+				bonus_table[2] = {200, 0x7c} -- +200 points = 400
+				bonus_table[3] = {400, 0x7d} -- +300 points = 800
+				bonus_table[4] = {400, 0x7e} -- +400 points = 1200
 			end
 			
 		end
@@ -645,40 +657,45 @@ function galakong.startplugin()
 										mem:write_u8(0x6085, 1)
 
 										-- calculate bonus for destroying multiple enemies.
-										if emu.romname() == "dkongjr" then
-											if hit_count == 1 then
-												bonus = 200  -- 200 total
-												_sprite = 0x7a
-											elseif hit_count == 2 then
-												bonus = 200  -- +200 = 400 total
-												_sprite = 0x7c
-											elseif hit_count == 3 then
-												bonus = 400  -- +400 = 800 total
-												_sprite = 0x7d
-											elseif hit_count == 4 then  -- stop awarding at max 1200 points
-												bonus = 400  -- +400 = 1200 total
-												_sprite = 0x7e
-											else
-												bonus = 0
-											end										
+										if hit_count >= 1 and hit_count <= 4 then
+											bonus, _sprite = bonus_table[hit_count][1], bonus_table[hit_count][2]
 										else
-											if hit_count == 1 then
-												bonus = 200  -- 200 total
-												_sprite = 0x7c
-											elseif hit_count == 2 then
-												bonus = 300  -- +300 = 500 total
-												_sprite = 0x7e
-											elseif hit_count == 3 then
-												bonus = 300  -- +300 = 800 total
-												_sprite = 0x7f
-											elseif hit_count == 4 then  -- stop awarding at max 1200 points
-												bonus = 400  -- +400 = 1200 total
-												_sprite = 0x76 -- love heart sprite
-											else
-												bonus = 0
-											end
+											bonus = 0
 										end
-										
+										--if emu.romname() == "dkongjr" then
+										--	if hit_count == 1 then
+										--		bonus = 200  -- 200 total
+										--		_sprite = 0x7a
+										--	elseif hit_count == 2 then
+										--		bonus = 200  -- +200 = 400 total
+										--		_sprite = 0x7c
+										--	elseif hit_count == 3 then
+										--		bonus = 400  -- +400 = 800 total
+										--		_sprite = 0x7d
+										--	elseif hit_count == 4 then  -- stop awarding at max 1200 points
+										--		bonus = 400  -- +400 = 1200 total
+										--		_sprite = 0x7e
+										--	else
+										--		bonus = 0
+										--	end
+										--else
+										--	if hit_count == 1 then
+										--		bonus = 200  -- 200 total
+										--		_sprite = 0x7c
+										--	elseif hit_count == 2 then
+										--		bonus = 300  -- +300 = 500 total
+										--		_sprite = 0x7e
+										--	elseif hit_count == 3 then
+										--		bonus = 300  -- +300 = 800 total
+										--		_sprite = 0x7f
+										--	elseif hit_count == 4 then  -- stop awarding at max 1200 points
+										--		bonus = 400  -- +400 = 1200 total
+										--		_sprite = 0x76 -- love heart sprite
+										--	else
+										--		bonus = 0
+										--	end
+										--end
+
 										if bonus > 0 then
 											--display bonus points
 											mem:write_u8(0x6a30, missile_x + 15)
