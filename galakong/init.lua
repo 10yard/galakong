@@ -1,4 +1,4 @@
--- GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong
+-- GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong (and Donkey Kong Junior)
 -- by Jon Wilson (10yard)
 --
 -- Tested with latest MAME version 0.240
@@ -414,9 +414,9 @@ function galakong.startplugin()
 					0x6400, 0x6420, 0x6440, 0x6460, 0x6480, 
 					0x6500, 0x6510, 0x6520, 0x6530, 0x6540, 0x6550, 0x6550}
 
-				pickup_table[1] = {20, 20}
-				pickup_table[2] = {20, 20}
-				pickup_table[3] = {20, 20}
+				pickup_table[1] = {24, 88}
+				pickup_table[2] = {16, 40}  --ok
+				pickup_table[3] = {8, 109}  --ok
 				pickup_table[4] = {20, 20}				
 			end
 			
@@ -485,7 +485,7 @@ function galakong.startplugin()
 			end
 
 			if mode2 == 0x7 then  -- Intro screen
-				if mem:read_u8(0x608a) == 1 then
+				if not started then
 					clear_sounds()
 					if not started then
 						play("start")
@@ -497,14 +497,16 @@ function galakong.startplugin()
 				end
 			end
 
-			if mode2 == 0x8 then -- before how high screen
+			if mode2 == 0x8 then -- before how high screen (not on DK JR)
 				howhigh_ready = true
 			end
 
 			if mode2 == 0xa then  --how high screen
 				dead = false
 				explosions = {}
-				draw_ship(24, 160, 1)
+				if emu.romname() ~= "dkongjr" then
+					draw_ship(24, 160, 1)
+				end
 				if started then
 					stop("start")
 					started = false
