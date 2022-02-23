@@ -38,6 +38,7 @@ function galakong.startplugin()
 	-- 1) Single player mode:  mirrors Jumpman's movements
 	-- 2) Co-op mode:  the ship is controlled by player 2 using "P1", "P2" and "Coin" buttons.
 	local play_mode = 1
+	local input_adjust = 0
 	local ship_y = -10
 	local ship_x = 230
 	local missile_y
@@ -432,7 +433,7 @@ function galakong.startplugin()
 
 			--Add more delay to the GAME OVER screen
 			mem:write_direct_u8(0x132f, 0xff)
-			
+						
 			-- Donkey Kong Junior specific initialisation
 			if emu.romname() == "dkongjr" then
 				enemy_table =
@@ -449,8 +450,9 @@ function galakong.startplugin()
 				bonus_table[2] = {200, 0x7c} -- +200 points = 400
 				bonus_table[3] = {400, 0x7d} -- +300 points = 800
 				bonus_table[4] = {400, 0x7e} -- +400 points = 1200
-			end
-			
+				
+				input_adjust = 64
+			end			
 		end
 	end
 	
@@ -511,7 +513,7 @@ function galakong.startplugin()
 			end
 
 			-- CO-OP appears top-right for 2 player mode
-			if play_mode == 2 then
+			if play_mode == 2 and emu.romname() ~= "dkongjr" then
 				write_ram_message(0x7504, "CO-OP")
 			end
 
@@ -525,10 +527,17 @@ function galakong.startplugin()
 						score, last_score = "000000", "000000"
 						million_wraps = 0
 						total_shots, total_hits = {}, {}
+						ship_y = -25
+					end
+				end
+				if emu.romname() == "dkongjr" then
+					-- animate ship for DK Junior
+					draw_ship(ship_y, 113, 1)
+					if ship_y < 28 then
+						ship_y = ship_y + 0.25
 					end
 				end
 			end
-
 
 			if mode2 == 0x8 then -- before how high screen (not on DK JR)
 				howhigh_ready = true
@@ -815,7 +824,7 @@ function galakong.startplugin()
 		local _left, _right, _fire = false, false, false
 		local _input = 0
 		if play_mode == 2 then
-			_input = mem:read_u8(0xc7d00)
+			_input = mem:read_u8(0xc7d00) - input_adjust
 			if _input >= 128 then
 				_fire = true
 				_input = _input - 128
