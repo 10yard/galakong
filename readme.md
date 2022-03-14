@@ -1,6 +1,6 @@
 # **GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong (and Donkey Kong Junior)** #
 
-Tested with latest MAME version 0.240
+Tested with latest MAME version 0.241
 
 Fully compatible with all MAME versions from 0.227
 
