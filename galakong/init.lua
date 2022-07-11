@@ -1,7 +1,7 @@
 -- GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong (and Donkey Kong Junior)
 -- by Jon Wilson (10yard)
 --
--- Tested with latest MAME version 0.244
+-- Tested with latest MAME version 0.245
 -- Fully compatible with all MAME versions from 0.227
 --
 -- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
@@ -435,8 +435,8 @@ function galakong.startplugin()
 			mem:write_direct_u8(0x132f, 0xff)
 			
 			-- Is this the wild barrel hack?  Offset 3FBA to 3FBF is not used in regular DK
-			if mem:read_direct_u32(0x3fba) > 0 then
-				pickup_table[1] = {10, 5}
+			if emu.romname() == "dkong" and mem:read_direct_u32(0x3fba) == 0xc31977dd and mem:read_direct_u16(0x3fbe) == 0x2153 then
+				pickup_table[1] = {10, 5} -- make pickup location easier on barrels
 			end
 			
 			-- Donkey Kong Junior specific initialisation
