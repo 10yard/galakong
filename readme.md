@@ -27,6 +27,8 @@ You can disable some features by setting environmental variables before you laun
 
 ```SET GALAKONG_NOEXPLOSIONS=1```
 
+The hack becomes "Extreme Galakong" when used in combination with the "Wild Barrel Hack" rom.
+
   
 ## Installing and running
  
