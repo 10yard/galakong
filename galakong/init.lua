@@ -422,7 +422,7 @@ function galakong.startplugin()
 			s_mem = s_cpu.spaces["data"]
 
 			-- Is this the wild barrel hack (i.e. extreme galakong)?  Offset 3FBA to 3FBF is not used in regular DK
-			if emu.romname() == "dkong" and mem:read_direct_u32(0x3fba) == 0xc31977dd and mem:read_direct_u16(0x3fbe) == 0x2153 then
+			if emu.romname() == "dkong" and mem:read_direct_u64(0x3fba) == 0x4d212153c31977dd then
 				extreme = true
 				pickup_table[1] = {10, 96} -- easier pickup location on barrels
 			end
