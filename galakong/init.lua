@@ -1,7 +1,7 @@
 -- GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong (and Donkey Kong Junior)
 -- by Jon Wilson (10yard)
 --
--- Tested with latest MAME version 0.245
+-- Tested with latest MAME version 0.254
 -- Fully compatible with all MAME versions from 0.227
 --
 -- Jumpman is assisted by an accompanying ship which can take out barrels, fireballs, firefoxes, pies and springs.  
@@ -28,7 +28,7 @@
 -----------------------------------------------------------------------------------------
 local exports = {}
 exports.name = "galakong"
-exports.version = "1.3"
+exports.version = "1.4"
 exports.description = "GalaKong: A Galaga Themed Shoot 'Em Up Plugin for Donkey Kong (and Donkey Kong Junior)"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -744,16 +744,23 @@ function galakong.startplugin()
 											mem:write_u8(0x6a33, 256 - missile_y)
 											last_bonus = _frame
 
-											--7 digits for the calculation purposes incase we tick over the million
+											--7 digits for the calculation purposes incase we tick over the million											
 											score = _format("%07d", tonumber(get_score_segment(0x60b4)..get_score_segment(0x60b3)..get_score_segment(0x60b2)) + bonus)
-											--update 6 digit score in ram
 											score = _sub(score, 2, 7)
-											set_score_segment(0x60b4, _sub(score, 1,2))
+											set_score_segment(0x60b4, _sub(score, 1,2))  --update score in ram
 											set_score_segment(0x60b3, _sub(score, 3,4))
-											set_score_segment(0x60b2, _sub(score, 5,6))
-
-											-- update score on screen
-											write_ram_message(0x7781, score)
+											set_score_segment(0x60b2, _sub(score, 5,6))											
+											write_ram_message(0x7781, score)  --update score on screen
+											
+											-- update high score when necessary
+											high_score = _format("%06d", tonumber(get_score_segment(0x60ba)..get_score_segment(0x60b9)..get_score_segment(0x60b8)))
+											if tonumber(score) >= tonumber(high_score) then
+												-- update high score on screen
+												set_score_segment(0x60ba, _sub(score, 1,2)) --update score in ram
+												set_score_segment(0x60b9, _sub(score, 3,4))
+												set_score_segment(0x60b8, _sub(score, 5,6))	
+												write_ram_message(0x7641, score)  --update score on screen
+											end
 										end
 									end
 								end

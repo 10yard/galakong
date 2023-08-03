@@ -1,4 +1,4 @@
-set version=v1.2
+set version=v1.4
 
 set zip_path="C:\Program Files\7-Zip\7z"
 del releases\galakong_plugin_%version%.zip
